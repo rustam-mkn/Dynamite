@@ -219,6 +219,11 @@ final class SpacesStore: ObservableObject {
         entries.filter { $0.kind.isFeatureEnabled }
     }
 
+    /// First visible space — used when the notch opens (unless “open last tab”).
+    var firstVisibleNotchView: NotchViews {
+        visibleEntries.first?.kind.notchView ?? .home
+    }
+
     func icon(for kind: SpaceKind) -> SpaceIconKind {
         entries.first(where: { $0.kind == kind })?.icon ?? kind.defaultIcon
     }

@@ -192,7 +192,11 @@ class BoringViewModel: NSObject, ObservableObject {
     func open() {
         self.notchSize = openNotchSize
         self.notchState = .open
-        
+
+        // Unless “open last tab” is on, land on the first space in the user’s order
+        // (not a hard-coded Home). Shelf override still applies when enabled + non-empty.
+        applyDefaultSpaceOnOpen()
+
         // Force music information update when notch is opened
         MusicManager.shared.forceUpdate()
     }
@@ -209,13 +213,31 @@ class BoringViewModel: NSObject, ObservableObject {
         self.coordinator.sneakPeek.show = false
         self.edgeAutoOpenActive = false
 
-        // Set the current view to shelf if it contains files and the user enables openShelfByDefault
-        // Otherwise, if the user has not enabled openLastShelfByDefault, set the view to home
-    if !ShelfStateViewModel.shared.isEmpty && Defaults[.openShelfByDefault] {
+        // Prepare next open: shelf shortcut, else first space in Spaces order
+        // (unless user asked to reopen the last tab they were on).
+        if !ShelfStateViewModel.shared.isEmpty && Defaults[.openShelfByDefault] {
             coordinator.currentView = .shelf
         } else if !coordinator.openLastTabByDefault {
-            coordinator.currentView = .home
+            coordinator.currentView = SpacesStore.shared.firstVisibleNotchView
         }
+    }
+
+    /// Default tab when opening the notch (hover / gesture / etc.).
+    private func applyDefaultSpaceOnOpen() {
+        if coordinator.openLastTabByDefault {
+            // Keep whatever tab was left selected (or shelf if close() set it).
+            // If that tab is no longer visible, fall back to first space.
+            let visible = SpacesStore.shared.visibleEntries.map(\.kind.notchView)
+            if !visible.contains(coordinator.currentView) {
+                coordinator.currentView = SpacesStore.shared.firstVisibleNotchView
+            }
+            return
+        }
+        if !ShelfStateViewModel.shared.isEmpty && Defaults[.openShelfByDefault] {
+            coordinator.currentView = .shelf
+            return
+        }
+        coordinator.currentView = SpacesStore.shared.firstVisibleNotchView
     }
 
     func closeHello() {

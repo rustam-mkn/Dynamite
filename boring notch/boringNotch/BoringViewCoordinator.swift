@@ -66,7 +66,7 @@ class BoringViewCoordinator: ObservableObject {
             if !alwaysShowTabs {
                 openLastTabByDefault = false
                 if ShelfStateViewModel.shared.isEmpty || !Defaults[.openShelfByDefault] {
-                    currentView = .home
+                    currentView = SpacesStore.shared.firstVisibleNotchView
                 }
             }
         }
@@ -295,6 +295,6 @@ class BoringViewCoordinator: ObservableObject {
     }
     
     func showEmpty() {
-        currentView = .home
+        currentView = SpacesStore.shared.firstVisibleNotchView
     }
 }
