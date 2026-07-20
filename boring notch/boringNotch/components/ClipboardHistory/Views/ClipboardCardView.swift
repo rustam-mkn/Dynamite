@@ -167,7 +167,7 @@ struct ClipboardCardView: View {
         // Flatten card into a single layer for smoother horizontal scroll (ProMotion)
         .compositingGroup()
         .drawingGroup(opaque: false)
-        // Instant single-click — no double-tap recognizer (that delayed taps)
+        // Parent decides select vs copy: first tap selects, second tap on selection activates
         .onTapGesture(perform: onTap)
         .contextMenu {
             Button(isPinned ? L("Unpin") : L("Pin"), action: onPin)

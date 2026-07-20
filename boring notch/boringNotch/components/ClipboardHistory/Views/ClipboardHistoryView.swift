@@ -186,8 +186,13 @@ struct ClipboardHistoryView: View {
 
     // MARK: - Copy + animation + delayed close
 
+    /// First click selects the card; a second click on the already-selected card copies
+    /// (or pastes when `clipboardPasteAutomatically` is on).
     private func handleCardTap(item: HistoryItem, index: Int) {
-        manager.selectedIndex = index
+        if index != manager.selectedIndex {
+            manager.selectedIndex = index
+            return
+        }
         if Defaults[.clipboardPasteAutomatically] {
             performAnimatedAction(item: item, index: index, paste: true)
         } else {
