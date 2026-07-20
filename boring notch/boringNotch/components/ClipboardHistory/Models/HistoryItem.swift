@@ -6,6 +6,7 @@
 import AppKit
 import Defaults
 import SwiftData
+import UniformTypeIdentifiers
 import Vision
 
 @Model
@@ -108,7 +109,7 @@ final class HistoryItem {
 
     var imageData: Data? {
         var data: Data?
-        data = contentData([.tiff, .png, .jpeg, .heic])
+        data = contentData([.tiff, .png, .jpeg, .heic, .image])
         if data == nil, universalClipboardImage, let url = fileURLs.first {
             data = try? Data(contentsOf: url)
         }
@@ -116,8 +117,14 @@ final class HistoryItem {
     }
 
     var image: NSImage? {
-        guard let data = imageData else { return nil }
-        return NSImage(data: data)
+        if let data = imageData, let image = NSImage(data: data) {
+            return image
+        }
+
+        // Finder copies image files as file URLs rather than bitmap data.
+        // Keep the file URL for paste support, but use the file itself for the visual preview.
+        guard let imageURL = imageFileURL else { return nil }
+        return NSImage(contentsOf: imageURL)
     }
 
     var rtfData: Data? { contentData([.rtf]) }
@@ -142,9 +149,18 @@ final class HistoryItem {
     var fromMaccy: Bool { contentData([.fromMaccy]) != nil }
     var universalClipboard: Bool { contentData([.universalClipboard]) != nil }
 
-    private var universalClipboardImage: Bool { universalClipboard && fileURLs.first?.pathExtension == "jpeg" }
+    private var universalClipboardImage: Bool {
+        universalClipboard && fileURLs.first?.pathExtension.lowercased() == "jpeg"
+    }
     private var universalClipboardText: Bool {
-        universalClipboard && contentData([.html, .tiff, .png, .jpeg, .rtf, .string, .heic]) != nil
+        universalClipboard && contentData([.html, .tiff, .png, .jpeg, .rtf, .string, .heic, .image]) != nil
+    }
+
+    private var imageFileURL: URL? {
+        fileURLs.first { url in
+            guard url.isFileURL else { return false }
+            return UTType(filenameExtension: url.pathExtension)?.conforms(to: .image) == true
+        }
     }
 
     var contentKind: ClipboardContentKind {
