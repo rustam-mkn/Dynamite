@@ -163,8 +163,24 @@ final class HistoryItem {
         }
     }
 
+    /// First file URL that points at a video / movie asset (Finder copy, etc.).
+    var videoFileURL: URL? {
+        fileURLs.first { url in
+            guard url.isFileURL else { return false }
+            guard let type = UTType(filenameExtension: url.pathExtension) else { return false }
+            return type.conforms(to: .movie) || type.conforms(to: .video)
+        }
+    }
+
+    /// URL best suited for QuickLook / thumbnail generation (image file or video).
+    var mediaPreviewURL: URL? {
+        if let imageFileURL { return imageFileURL }
+        return videoFileURL
+    }
+
     var contentKind: ClipboardContentKind {
         if image != nil { return .image }
+        if videoFileURL != nil { return .video }
         if !fileURLs.isEmpty { return .file }
         if let text = text, let url = URL(string: text), url.scheme != nil, text.contains("://") {
             return .link
@@ -213,6 +229,7 @@ final class HistoryItem {
 enum ClipboardContentKind: String {
     case text
     case image
+    case video
     case file
     case link
 
@@ -220,8 +237,17 @@ enum ClipboardContentKind: String {
         switch self {
         case .text: return "doc.text"
         case .image: return "photo"
+        case .video: return "video"
         case .file: return "doc"
         case .link: return "link"
+        }
+    }
+
+    /// Image / video cards render a visual thumbnail instead of text.
+    var isVisualMedia: Bool {
+        switch self {
+        case .image, .video: return true
+        default: return false
         }
     }
 }

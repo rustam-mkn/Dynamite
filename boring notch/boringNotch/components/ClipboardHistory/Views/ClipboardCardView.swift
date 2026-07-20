@@ -1,6 +1,6 @@
 //
 //  ClipboardCardView.swift
-//  boringNotch — Pasta-style card (iter4: instant click, copy fill anim, scroll perf)
+//  boringNotch — Pasta-style card (visual media: images + video previews)
 //
 
 import AppKit
@@ -31,7 +31,10 @@ struct ClipboardCardView: View {
     private let appIconImage: NSImage?
     private let fileIconImage: NSImage?
     private let fileDisplayName: String
-    private let cachedPreviewImage: NSImage?
+    private let mediaCacheKey: String
+
+    @State private var mediaThumbnail: NSImage?
+    @State private var mediaLoadFailed = false
 
     init(
         item: HistoryItem,
@@ -78,7 +81,10 @@ struct ClipboardCardView: View {
                 self.previewText = t.isEmpty ? L("(empty)") : t
             }
         }
-        self.cachedPreviewImage = item.image
+        self.mediaCacheKey = "\(item.persistentModelID)_\(item.lastCopiedAt.timeIntervalSince1970)"
+        // Seed from cache so re-scrolls don't flash a placeholder.
+        let seedSize = CGSize(width: cardWidth * 2, height: cardHeight * 2)
+        _mediaThumbnail = State(initialValue: ClipboardMediaThumbnailCache.cached(for: item, size: seedSize))
     }
 
     private var pressScale: CGFloat {
@@ -96,26 +102,45 @@ struct ClipboardCardView: View {
         }
     }
 
+    private var isVisualMedia: Bool { contentKind.isVisualMedia }
+
     var body: some View {
         ZStack(alignment: .bottomLeading) {
-            bodyPreview
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .padding(inset)
-                .padding(.bottom, 18)
-
-            HStack(spacing: 4) {
-                appIcon
-                    .frame(width: 14, height: 14)
-                if isPinned {
-                    Image(systemName: "pin.fill")
-                        .font(.system(size: 8))
-                        .foregroundStyle(.orange)
-                }
-                Spacer(minLength: 2)
-                footerTrailing
+            if isVisualMedia {
+                mediaBackground
+            } else {
+                bodyPreview
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .padding(inset)
+                    .padding(.bottom, 18)
             }
-            .padding(.horizontal, inset)
-            .padding(.bottom, 6)
+
+            // Footer: app + pin + relative time (over media via gradient scrim)
+            VStack(spacing: 0) {
+                Spacer(minLength: 0)
+                if isVisualMedia {
+                    LinearGradient(
+                        colors: [.clear, .black.opacity(0.55)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: 28)
+                    .allowsHitTesting(false)
+                }
+                HStack(spacing: 4) {
+                    appIcon
+                        .frame(width: 14, height: 14)
+                    if isPinned {
+                        Image(systemName: "pin.fill")
+                            .font(.system(size: 8))
+                            .foregroundStyle(isVisualMedia ? .white.opacity(0.95) : .orange)
+                    }
+                    Spacer(minLength: 2)
+                    footerTrailing
+                }
+                .padding(.horizontal, inset)
+                .padding(.bottom, 6)
+            }
 
             // Green fill from center (selection accent)
             if copyPhase != nil {
@@ -162,32 +187,89 @@ struct ClipboardCardView: View {
             Divider()
             Button(L("Delete"), role: .destructive, action: onDelete)
         }
+        .task(id: mediaCacheKey) {
+            guard isVisualMedia else { return }
+            await loadMediaThumbnail()
+        }
     }
+
+    // MARK: - Media
+
+    @ViewBuilder
+    private var mediaBackground: some View {
+        ZStack {
+            if let mediaThumbnail {
+                Image(nsImage: mediaThumbnail)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: cardWidth, height: cardHeight)
+                    .clipped()
+            } else if mediaLoadFailed {
+                mediaPlaceholder(systemName: contentKind.systemImage)
+            } else {
+                mediaPlaceholder(systemName: contentKind.systemImage, showProgress: true)
+            }
+
+            // Video: play badge so it is clearly distinct from a still image
+            if contentKind == .video {
+                Image(systemName: "play.circle.fill")
+                    .font(.system(size: 28))
+                    .symbolRenderingMode(.palette)
+                    .foregroundStyle(.white, .black.opacity(0.45))
+                    .shadow(color: .black.opacity(0.35), radius: 3, y: 1)
+            }
+        }
+        .frame(width: cardWidth, height: cardHeight)
+    }
+
+    @ViewBuilder
+    private func mediaPlaceholder(systemName: String, showProgress: Bool = false) -> some View {
+        ZStack {
+            Color.white.opacity(0.06)
+            if showProgress {
+                ProgressView()
+                    .controlSize(.small)
+            } else {
+                Image(systemName: systemName)
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(width: cardWidth, height: cardHeight)
+    }
+
+    private func loadMediaThumbnail() async {
+        let size = CGSize(width: cardWidth * 2, height: cardHeight * 2)
+        if let cached = ClipboardMediaThumbnailCache.cached(for: item, size: size) {
+            mediaThumbnail = cached
+            return
+        }
+        let image = await ClipboardMediaThumbnailCache.thumbnail(for: item, size: size)
+        if Task.isCancelled { return }
+        if let image {
+            mediaThumbnail = image
+            mediaLoadFailed = false
+        } else {
+            mediaLoadFailed = mediaThumbnail == nil
+        }
+    }
+
+    // MARK: - Text / file body
 
     @ViewBuilder
     private var footerTrailing: some View {
         Text(relativeTime)
             .font(.system(size: 9, weight: .medium, design: .rounded))
-            .foregroundStyle(.secondary)
+            .foregroundStyle(isVisualMedia ? Color.white.opacity(0.9) : Color.secondary)
             .monospacedDigit()
     }
 
     @ViewBuilder
     private var bodyPreview: some View {
         switch contentKind {
-        case .image:
-            if let image = cachedPreviewImage {
-                Image(nsImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .clipped()
-                    .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
-            } else {
-                Image(systemName: "photo")
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
+        case .image, .video:
+            // Handled by mediaBackground
+            EmptyView()
         case .file:
             VStack(alignment: .leading, spacing: 4) {
                 if let fileIconImage {
@@ -232,7 +314,7 @@ struct ClipboardCardView: View {
         } else {
             Image(systemName: "app.fill")
                 .resizable()
-                .foregroundStyle(.secondary)
+                .foregroundStyle(isVisualMedia ? .white.opacity(0.9) : .secondary)
         }
     }
 }

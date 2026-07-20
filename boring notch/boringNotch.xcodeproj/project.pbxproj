@@ -25,6 +25,7 @@
 		P0C2E5F693DDC1C7EDF5D323 /* ClipboardHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = P0C290BEE9F0D54073538F9A /* ClipboardHistoryView.swift */; };
 		P0CTEXTPOPUP01BFILE000001 /* ClipboardTextPopupPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = P0CTEXTPOPUP01FREF000001 /* ClipboardTextPopupPanel.swift */; };
 		P0CICONCACHE01BFILE000001 /* ClipboardIconCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = P0CICONCACHE01FREF000001 /* ClipboardIconCache.swift */; };
+		P0CMEDIATHUMB01BFILE0001 /* ClipboardMediaThumbnailCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = P0CMEDIATHUMB01FREF0001 /* ClipboardMediaThumbnailCache.swift */; };
 		1100290C2E847E2800035A57 /* NSItemProvider+LoadHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1100290B2E847E2800035A57 /* NSItemProvider+LoadHelpers.swift */; };
 		110029272E84FD4C00035A57 /* TemporaryFileStorageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110029262E84FD4C00035A57 /* TemporaryFileStorageService.swift */; };
 		1100292A2E8691B400035A57 /* FileShareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110029292E8691B400035A57 /* FileShareView.swift */; };
@@ -218,6 +219,7 @@
 		P0C290BEE9F0D54073538F9A /* ClipboardHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardHistoryView.swift; sourceTree = "<group>"; };
 		P0CTEXTPOPUP01FREF000001 /* ClipboardTextPopupPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardTextPopupPanel.swift; sourceTree = "<group>"; };
 		P0CICONCACHE01FREF000001 /* ClipboardIconCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardIconCache.swift; sourceTree = "<group>"; };
+		P0CMEDIATHUMB01FREF0001 /* ClipboardMediaThumbnailCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardMediaThumbnailCache.swift; sourceTree = "<group>"; };
 		1100290B2E847E2800035A57 /* NSItemProvider+LoadHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NSItemProvider+LoadHelpers.swift"; sourceTree = "<group>"; };
 		110029262E84FD4C00035A57 /* TemporaryFileStorageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemporaryFileStorageService.swift; sourceTree = "<group>"; };
 		110029292E8691B400035A57 /* FileShareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileShareView.swift; sourceTree = "<group>"; };
@@ -428,6 +430,7 @@
 				P0C290BEE9F0D54073538F9A /* ClipboardHistoryView.swift */,
 				P0CTEXTPOPUP01FREF000001 /* ClipboardTextPopupPanel.swift */,
 				P0CICONCACHE01FREF000001 /* ClipboardIconCache.swift */,
+				P0CMEDIATHUMB01FREF0001 /* ClipboardMediaThumbnailCache.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -1028,6 +1031,7 @@
 				P0C2E5F693DDC1C7EDF5D323 /* ClipboardHistoryView.swift in Sources */,
 				P0CTEXTPOPUP01BFILE000001 /* ClipboardTextPopupPanel.swift in Sources */,
 				P0CICONCACHE01BFILE000001 /* ClipboardIconCache.swift in Sources */,
+				P0CMEDIATHUMB01BFILE0001 /* ClipboardMediaThumbnailCache.swift in Sources */,
 				115C12EC2ED3D003009754CA /* OpenNotchHUD.swift in Sources */,
 				14C08BB92C8DE4B1000F8AA0 /* BoringCalendar.swift in Sources */,
 				5955950D2E900ED800C66711 /* ApplicationRelauncher.swift in Sources */,
