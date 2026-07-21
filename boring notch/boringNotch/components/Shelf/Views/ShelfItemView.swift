@@ -105,7 +105,7 @@ struct ShelfItemView: View {
 
     private var textView: some View {
         Text(item.displayName)
-            .font(.system(size: 12, weight: .medium))
+            .font(.notch(size: 12, weight: .medium))
             .foregroundStyle(.primary)
             .lineLimit(2)
             .truncationMode(.middle)

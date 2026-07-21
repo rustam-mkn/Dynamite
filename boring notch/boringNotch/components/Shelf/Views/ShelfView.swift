@@ -89,7 +89,7 @@ struct ShelfView: View {
                     
                     Text("Drop files here")
                         .foregroundStyle(.gray)
-                        .font(.system(.title3, design: .rounded))
+                        .font(.notch(.title3))
                         .fontWeight(.medium)
                 }
             } else {

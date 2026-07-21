@@ -105,17 +105,10 @@ struct UsageTabView: View {
             VStack(spacing: 0) {
                 HStack {
                     Spacer(minLength: 0)
-                    Button {
+                    // Orca status-bar RefreshCw control (size 11 + spin while fetching)
+                    UsageRefreshButton(isRefreshing: rateLimits.isFetching) {
                         Task { await rateLimits.refresh(force: true) }
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 22, height: 22)
                     }
-                    .buttonStyle(.plain)
-                    .opacity(rateLimits.isFetching ? 0.45 : 1)
-                    .disabled(rateLimits.isFetching)
                 }
                 .padding(.trailing, 4)
                 .padding(.top, 2)
@@ -136,7 +129,7 @@ struct UsageTabView: View {
                                     )
                                     Spacer(minLength: 0)
                                     Image(systemName: "chevron.right")
-                                        .font(.system(size: 10, weight: .semibold))
+                                        .font(.notch(size: 10, weight: .semibold))
                                         .foregroundStyle(.secondary.opacity(0.55))
                                 }
                                 .padding(.horizontal, 10)
@@ -165,7 +158,7 @@ struct UsageTabView: View {
             if rateLimits.isFetching {
                 ProgressView().controlSize(.small)
                 Text(L("Loading usage…"))
-                    .font(.system(size: 11))
+                    .font(.notch(size: 11))
                     .foregroundStyle(.secondary)
             } else {
                 HStack(spacing: 10) {
@@ -174,10 +167,10 @@ struct UsageTabView: View {
                     ProviderIconView(provider: .grok, size: 16)
                 }
                 Text(L("No subscription usage yet"))
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.notch(size: 12, weight: .medium))
                     .foregroundStyle(.white.opacity(0.9))
                 Text(L("Sign in to Claude, Codex, or Grok CLI. Manage agents in Settings → Usage."))
-                    .font(.system(size: 10))
+                    .font(.notch(size: 10))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 16)
@@ -189,7 +182,7 @@ struct UsageTabView: View {
                             HStack(spacing: 4) {
                                 ProviderIconView(provider: provider, size: 11)
                                 Text(provider.displayName)
-                                    .font(.system(size: 10, weight: .semibold))
+                                    .font(.notch(size: 10, weight: .semibold))
                             }
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
@@ -227,7 +220,7 @@ struct UsageMascotView: View {
                     .fill(Color.white.opacity(0.08))
                     .overlay {
                         Image(systemName: "face.smiling")
-                            .font(.system(size: side * 0.35))
+                            .font(.notch(size: side * 0.35))
                             .foregroundStyle(.secondary)
                     }
             }
@@ -253,15 +246,15 @@ struct CompactProviderChip: View {
 
             if limits.status == .idle || (limits.status == .fetching && chips.isEmpty) {
                 Text("···")
-                    .font(.system(size: 11))
+                    .font(.notch(size: 11))
                     .foregroundStyle(.secondary)
             } else if limits.status == .unavailable && chips.isEmpty {
                 Text("--")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.notch(size: 11, weight: .medium))
                     .foregroundStyle(.secondary.opacity(0.55))
             } else if chips.isEmpty && limits.status == .error {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 10))
+                    .font(.notch(size: 10))
                     .foregroundStyle(.secondary)
             } else {
                 // Mini-bar for primary window of ANY provider (session → weekly → monthly → fable)
@@ -271,17 +264,17 @@ struct CompactProviderChip: View {
                 ForEach(Array(chips.enumerated()), id: \.offset) { index, chip in
                     if index > 0 {
                         Text("·")
-                            .font(.system(size: 11))
+                            .font(.notch(size: 11))
                             .foregroundStyle(.secondary.opacity(0.7))
                     }
                     Text(chip)
-                        .font(.system(size: 11, weight: .medium).monospacedDigit())
+                        .font(.notch(size: 11, weight: .medium).monospacedDigit())
                         .foregroundStyle(.white.opacity(0.9))
                         .lineLimit(1)
                 }
                 if limits.status == .error {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 9))
+                        .font(.notch(size: 9))
                         .foregroundStyle(.secondary)
                 }
             }
@@ -350,9 +343,9 @@ struct ProviderDetailPanel: View {
                 Button(action: onBack) {
                     HStack(spacing: 4) {
                         Image(systemName: "chevron.left")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(.notch(size: 11, weight: .semibold))
                         Text(L("Back"))
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.notch(size: 11, weight: .medium))
                     }
                     .foregroundStyle(.secondary)
                 }
@@ -360,13 +353,7 @@ struct ProviderDetailPanel: View {
 
                 Spacer()
 
-                Button(action: onRefresh) {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .opacity(isFetching ? 0.45 : 1)
+                UsageRefreshButton(isRefreshing: isFetching, action: onRefresh)
             }
             .padding(.horizontal, 12)
             .padding(.top, 6)
@@ -379,11 +366,11 @@ struct ProviderDetailPanel: View {
                         HStack(spacing: 6) {
                             ProviderIconView(provider: limits.provider, size: 15)
                             Text(limits.provider.displayName)
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(.notch(size: 13, weight: .semibold))
                                 .foregroundStyle(.white)
                         }
                         Text(updatedText)
-                            .font(.system(size: 10))
+                            .font(.notch(size: 10))
                             .foregroundStyle(.secondary)
                     }
 
@@ -391,11 +378,11 @@ struct ProviderDetailPanel: View {
                         || (limits.status == .error && sections.isEmpty) {
                         VStack(alignment: .leading, spacing: 8) {
                             Text(limits.error ?? L("Unavailable"))
-                                .font(.system(size: 11))
+                                .font(.notch(size: 11))
                                 .foregroundStyle(.secondary)
                             Button(action: onSignIn) {
                                 Text(L("Sign in"))
-                                    .font(.system(size: 11, weight: .semibold))
+                                    .font(.notch(size: 11, weight: .semibold))
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 5)
                                     .background(Capsule().fill(Color.white.opacity(0.12)))
@@ -466,15 +453,15 @@ struct ProviderDetailPanel: View {
             HStack {
                 if let systemImage {
                     Image(systemName: systemImage)
-                        .font(.system(size: 11))
+                        .font(.notch(size: 11))
                         .foregroundStyle(.secondary)
                 }
                 Text(title)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.notch(size: 12, weight: .medium))
                     .foregroundStyle(.white.opacity(0.9))
                 Spacer()
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.notch(size: 10, weight: .semibold))
                     .foregroundStyle(.secondary.opacity(0.7))
             }
             .padding(.vertical, 8)
@@ -492,7 +479,7 @@ struct DetailWindowSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(label)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.notch(size: 12, weight: .semibold))
                 .foregroundStyle(.white)
 
             // Full-width bar (6px like Orca panel)
@@ -508,12 +495,12 @@ struct DetailWindowSection: View {
 
             HStack {
                 Text("\(Int(min(100, max(0, window.usedPercent)).rounded()))% used")
-                    .font(.system(size: 11).monospacedDigit())
+                    .font(.notch(size: 11).monospacedDigit())
                     .foregroundStyle(.secondary)
                 Spacer()
                 if let reset = resetLabel {
                     Text(reset)
-                        .font(.system(size: 11))
+                        .font(.notch(size: 11))
                         .foregroundStyle(.secondary)
                 }
             }

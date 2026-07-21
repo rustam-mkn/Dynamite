@@ -14,7 +14,7 @@ struct DragPreviewView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
 
             Text(displayName)
-                .font(.system(size: 12, weight: .medium))
+                .font(.notch(size: 12, weight: .medium))
                 .foregroundColor(.white)
                 .lineLimit(2)
                 .truncationMode(.middle)

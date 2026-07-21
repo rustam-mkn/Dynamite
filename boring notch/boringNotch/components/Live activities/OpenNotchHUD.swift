@@ -42,7 +42,7 @@ struct OpenNotchHUD: View {
                     EmptyView()
                 }
             }
-            .font(.system(size: 14, weight: .medium))
+            .font(.notch(size: 14, weight: .medium))
             .foregroundStyle(.white)
             .frame(width: 20, alignment: .center)
             
@@ -54,7 +54,7 @@ struct OpenNotchHUD: View {
                 .frame(width: showPercentage ? 65 : 108) // Fixed width for consistency
             } else {
                 Text(value > 0 ? "Unmuted" : "Muted")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.notch(size: 13, weight: .medium))
                     .foregroundStyle(.white)
                     .fixedSize()
             }
@@ -62,7 +62,7 @@ struct OpenNotchHUD: View {
             // Percentage Text
             if type != .mic && showPercentage {
                 Text("\(Int(value * 100))%")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.notch(size: 12, weight: .medium))
                     .foregroundStyle(.gray)
                     .monospacedDigit()
                     .frame(width: 35, alignment: .trailing)

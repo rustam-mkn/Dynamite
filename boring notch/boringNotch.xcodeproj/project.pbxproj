@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		C1A2B3C4D5E6F708192A3B53 /* Pocket.strings in Resources */ = {isa = PBXBuildFile; fileRef = C1A2B3C4D5E6F708192A3B50 /* Pocket.strings */; };
 		A441E4CA9A3042CC941E74BC /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5667F5FEDE88596E25FFEDA /* AppLanguage.swift */; };
+		N0TCHTYP0B01LDFILE000001 /* NotchTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = N0TCHTYP0FREF000000000001 /* NotchTypography.swift */; };
 		AFA0F69C710385D243E145E0 /* ClipboardRelativeTime.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEB9A9231B0CAA650B775F57 /* ClipboardRelativeTime.swift */; };
 		P0C9CC25F448E154F004FBEA /* HistoryItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = P0C25ADEC2D28EAAC839D6E5 /* HistoryItem.swift */; };
 		P0CC87B618E1293836A2C9E2 /* HistoryItemContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = P0C1BAA5FC9C6877DA7A6004 /* HistoryItemContent.swift */; };
@@ -203,6 +204,7 @@
 		C1A2B3C4D5E6F708192A3B51 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Pocket.strings; sourceTree = "<group>"; };
 		C1A2B3C4D5E6F708192A3B52 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Pocket.strings; sourceTree = "<group>"; };
 		A5667F5FEDE88596E25FFEDA /* AppLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLanguage.swift; sourceTree = "<group>"; };
+		N0TCHTYP0FREF000000000001 /* NotchTypography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchTypography.swift; sourceTree = "<group>"; };
 		AEB9A9231B0CAA650B775F57 /* ClipboardRelativeTime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardRelativeTime.swift; sourceTree = "<group>"; };
 		P0C25ADEC2D28EAAC839D6E5 /* HistoryItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryItem.swift; sourceTree = "<group>"; };
 		P0C1BAA5FC9C6877DA7A6004 /* HistoryItemContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryItemContent.swift; sourceTree = "<group>"; };
@@ -545,6 +547,7 @@
 			isa = PBXGroup;
 			children = (
 				A5667F5FEDE88596E25FFEDA /* AppLanguage.swift */,
+				N0TCHTYP0FREF000000000001 /* NotchTypography.swift */,
 				118EBE242E92DCCB00D54B5A /* AssociatedObject.swift */,
 				11A45C782E34E63100CEB175 /* MediaChecker.swift */,
 				1153BD972D9881F900979FB0 /* AppleScriptHelper.swift */,
@@ -1018,6 +1021,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A441E4CA9A3042CC941E74BC /* AppLanguage.swift in Sources */,
+				N0TCHTYP0B01LDFILE000001 /* NotchTypography.swift in Sources */,
 				AFA0F69C710385D243E145E0 /* ClipboardRelativeTime.swift in Sources */,
 				P0C9CC25F448E154F004FBEA /* HistoryItem.swift in Sources */,
 				P0CC87B618E1293836A2C9E2 /* HistoryItemContent.swift in Sources */,

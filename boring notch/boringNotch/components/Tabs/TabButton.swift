@@ -29,8 +29,9 @@ struct TabButton: View {
                     .contentShape(Capsule())
 
                 if let commandIndex, commandIndex >= 1, commandIndex <= 9 {
+                    // Shortcut chrome stays on fixed system rounded — independent of notch font setting.
                     Text("⌘\(commandIndex)")
-                        .font(.system(size: 8, weight: .semibold, design: .rounded))
+                        .font(NotchFont.shortcutBadge())
                         .foregroundStyle(.white.opacity(0.92))
                         .padding(.horizontal, 3.5)
                         .padding(.vertical, 1.5)

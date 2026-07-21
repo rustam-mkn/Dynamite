@@ -1214,6 +1214,13 @@ struct Appearance: View {
             }
 
             Section {
+                // Full system font database; Settings chrome stays system (only menu rows preview faces).
+                NotchFontFamilyPicker()
+            } header: {
+                Text(L("Typography"))
+            }
+
+            Section {
                 Defaults.Toggle(key: .coloredSpectrogram) {
                     Text(L("Colored spectrogram"))
                 }

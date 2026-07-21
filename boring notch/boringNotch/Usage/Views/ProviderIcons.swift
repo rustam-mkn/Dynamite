@@ -72,7 +72,7 @@ struct AgentCatalogIcon: View {
                     RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
                         .fill(Color.secondary.opacity(0.22))
                     Text(String(agentID.rawValue.prefix(1)).uppercased())
-                        .font(.system(size: size * 0.48, weight: .bold, design: .rounded))
+                        .font(.notch(size: size * 0.48, weight: .bold))
                         .foregroundStyle(.secondary)
                 }
             }

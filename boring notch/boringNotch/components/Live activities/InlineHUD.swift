@@ -55,7 +55,7 @@ struct InlineHUD: View {
                 .symbolVariant(.fill)
                 
                 Text(Type2Name(type))
-                    .font(.subheadline)
+                    .font(.notch(.subheadline))
                     .fontWeight(.medium)
                     .lineLimit(1)
                     .allowsTightening(true)
@@ -87,7 +87,7 @@ struct InlineHUD: View {
                         })
                         if (type == .volume && value.isZero) {
                             Text("muted")
-                                .font(.caption)
+                                .font(.notch(.caption))
                                 .fontWeight(.medium)
                                 .foregroundStyle(.gray)
                                 .lineLimit(1)
@@ -95,7 +95,7 @@ struct InlineHUD: View {
                                 .multilineTextAlignment(.trailing)
                         } else if Defaults[.showClosedNotchHUDPercentage] {
                             Text("\(Int(value * 100))%")
-                                .font(.caption)
+                                .font(.notch(.caption))
                                 .fontWeight(.medium)
                                 .foregroundStyle(.gray)
                                 .lineLimit(1)

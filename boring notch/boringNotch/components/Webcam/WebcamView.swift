@@ -36,9 +36,9 @@ struct CameraPreviewView: View {
                         VStack(spacing: 8) {
                             Image(systemName: webcamManager.authorizationStatus == .denied ? "exclamationmark.triangle" : "web.camera")
                                 .foregroundStyle(.gray)
-                                .font(.system(size: geometry.size.width/3.5))
+                                .font(.notch(size: geometry.size.width/3.5))
                             Text(webcamManager.authorizationStatus == .denied ? "Access Denied" : "Mirror")
-                                .font(.caption2)
+                                .font(.notch(.caption2))
                                 .foregroundColor(.gray)
                         }
                     }

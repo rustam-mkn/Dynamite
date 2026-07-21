@@ -49,8 +49,14 @@
 		<string>/Library/pnpm/</string>
 		<string>/.gemini/</string>
 		<string>/.npm/</string>
-		<!-- Claude export written by Terminal bridge after auth login -->
+	</array>
+	<!-- Persist refreshed OAuth tokens + exported sessions so providers do not drop after restart/expiry -->
+	<key>com.apple.security.temporary-exception.files.home-relative-path.read-write</key>
+	<array>
 		<string>/Library/Application Support/boringNotch/</string>
+		<string>/.claude/</string>
+		<string>/.codex/</string>
+		<string>/.grok/</string>
 	</array>
 	<key>com.apple.security.temporary-exception.files.absolute-path.read-only</key>
 	<array>

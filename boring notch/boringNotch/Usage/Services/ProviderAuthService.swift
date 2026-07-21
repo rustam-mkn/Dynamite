@@ -1,13 +1,17 @@
 //
 //  ProviderAuthService.swift
-//  boringNotch — open CLI login for usage providers (no Keychain UI in-app).
+//  boringNotch — provider sign-in without Gatekeeper .command dialogs.
 //
-//  Claude Code stores OAuth only in Keychain. The app never calls Security.framework
+//  Flow:
+//    1. Open the provider login page in the default browser immediately.
+//    2. Start the CLI auth bridge in a *hidden* Terminal window (no .command
+//       files, no activate) so OAuth tokens land on disk for usage fetch.
+//
+//  Claude Code stores OAuth in Keychain. The app never calls Security.framework
 //  (that triggers the "TheBoringNotch wants Claude Code-credentials" dialog).
-//  Instead Terminal (outside sandbox) exports the keychain blob to:
+//  The hidden Terminal bridge exports the keychain blob to:
 //    ~/.claude/.credentials.json
 //    ~/Library/Application Support/boringNotch/UsageAuth/claude.credentials.json
-//  which the app reads via home-relative sandbox exceptions.
 //
 
 import AppKit
@@ -41,30 +45,58 @@ enum ProviderAuthService {
         }
     }
 
-    /// Launch Terminal and run the provider's login CLI (+ Claude credential export).
+    /// Sign in: browser first, CLI bridge hidden (no Gatekeeper .command dialog).
     @discardableResult
     static func beginSignIn(for provider: UsageProviderID) -> Bool {
-        let script = shellScript(for: provider, mode: .loginAndSync)
-        return openInTerminal(command: script, title: "\(provider.displayName) login")
+        // Already have durable Claude session → export only (do not force re-login / token rotation).
+        if provider == .claude, ClaudeUsageFetcher.hasStoredCredentials() {
+            return syncClaudeCredentialsOnly()
+        }
+
+        // 1) Immediate browser — what the user sees.
+        openBrowserLogin(for: provider)
+
+        // 2) Hidden CLI bridge so OAuth/session files are written after browser auth.
+        //    Never opens a .command document (Gatekeeper "damaged app" dialog).
+        DispatchQueue.global(qos: .userInitiated).async {
+            _ = launchAuthBridge(
+                script: shellScript(for: provider, mode: .loginAndSync),
+                title: "\(provider.displayName) login",
+                hideTerminal: true
+            )
+        }
+        return true
     }
 
     /// Already signed into Claude CLI — only export Keychain → file for Pocket (no re-login).
     @discardableResult
     static func syncClaudeCredentialsOnly() -> Bool {
-        let script = shellScript(for: .claude, mode: .syncOnly)
-        return openInTerminal(command: script, title: "Claude sync credentials")
+        DispatchQueue.global(qos: .userInitiated).async {
+            _ = launchAuthBridge(
+                script: shellScript(for: .claude, mode: .syncOnly),
+                title: "Claude sync credentials",
+                hideTerminal: true
+            )
+        }
+        return true
     }
 
     /// Open provider docs / account page when CLI is not available.
     static func openAccountPage(for provider: UsageProviderID) {
+        openBrowserLogin(for: provider)
+    }
+
+    /// Browser destinations for each provider (login / account).
+    static func openBrowserLogin(for provider: UsageProviderID) {
         let urlString: String
         switch provider {
         case .claude:
-            urlString = "https://claude.ai/settings"
+            // Claude.ai login (CLI also opens its own OAuth URL with PKCE).
+            urlString = "https://claude.ai/login"
         case .codex:
-            urlString = "https://chatgpt.com"
+            urlString = "https://chatgpt.com/auth/login"
         case .grok:
-            urlString = "https://accounts.x.ai"
+            urlString = "https://accounts.x.ai/sign-in"
         case .gemini, .antigravity:
             urlString = "https://aistudio.google.com"
         case .kimi:
@@ -109,6 +141,7 @@ enum ProviderAuthService {
                 command: "codex login",
                 sourceFile: "\(home)/.codex/auth.json",
                 pocketFile: "\(home)/Library/Application Support/boringNotch/UsageAuth/codex.auth.json",
+                containerFile: UsagePaths.containerCodexAuthFile,
                 label: "Codex"
             )
         case .grok:
@@ -118,6 +151,7 @@ enum ProviderAuthService {
                 command: "grok login",
                 sourceFile: "\(home)/.grok/auth.json",
                 pocketFile: "\(home)/Library/Application Support/boringNotch/UsageAuth/grok.auth.json",
+                containerFile: UsagePaths.containerGrokAuthFile,
                 label: "Grok"
             )
         default:
@@ -130,11 +164,14 @@ enum ProviderAuthService {
     }
 
     private static func claudeScript(exportPath: String, home: String, mode: AuthMode) -> String {
-        // Export runs in Terminal (not sandboxed) so `security` can read Claude Code keychain
+        // Export runs outside the app sandbox so `security` can read Claude Code keychain
         // items without TheBoringNotch ACL prompt. Writes files Pocket is allowed to read.
         let pocketDir = "\(home)/Library/Application Support/boringNotch/UsageAuth"
         let pocketFile = "\(pocketDir)/claude.credentials.json"
         let legacyFile = "\(home)/.claude/.credentials.json"
+        // Sandbox container path (always readable by the app after export).
+        let containerFile = UsagePaths.containerClaudeCredentialsFile
+        let containerDir = UsagePaths.containerUsageAuthDir
 
         let loginBlock: String
         switch mode {
@@ -144,6 +181,7 @@ enum ProviderAuthService {
               echo "Claude already signed in — exporting credentials for Pocket…"
             else
               echo "→ claude auth login"
+              # CLI opens the correct OAuth URL in the browser (PKCE).
               claude auth login
               login_status=$?
               if [ $login_status -ne 0 ]; then
@@ -162,7 +200,6 @@ enum ProviderAuthService {
         }
 
         return """
-        clear
         \(exportPath)
         export HOME="\(home)"
         echo "Pocket — Claude auth bridge"
@@ -170,7 +207,7 @@ enum ProviderAuthService {
         \(loginBlock)
         echo ""
         echo "Exporting credentials to files Pocket can read…"
-        mkdir -p "\(home)/.claude" "\(pocketDir)"
+        mkdir -p "\(home)/.claude" "\(pocketDir)" "\(containerDir)"
 
         export_ok=0
         # Claude Code stores under account "user" and/or $USER; try both + scoped service names.
@@ -189,10 +226,12 @@ enum ProviderAuthService {
             if [ -n "$raw" ]; then
               printf '%s' "$raw" > "\(legacyFile)"
               printf '%s' "$raw" > "\(pocketFile)"
-              chmod 600 "\(legacyFile)" "\(pocketFile)" 2>/dev/null || true
+              printf '%s' "$raw" > "\(containerFile)"
+              chmod 600 "\(legacyFile)" "\(pocketFile)" "\(containerFile)" 2>/dev/null || true
               echo "✓ Exported from Keychain service '$svc' (account $acct)"
               echo "  → \(legacyFile)"
               echo "  → \(pocketFile)"
+              echo "  → \(containerFile)"
               export_ok=1
               break 2
             fi
@@ -207,13 +246,11 @@ enum ProviderAuthService {
 
         echo ""
         echo "Done. Return to Pocket — usage should refresh within a few seconds."
-        echo "You can close this window."
         """
     }
 
     private static func genericLoginScript(exportPath: String, command: String, successHint: String) -> String {
         """
-        clear
         echo "Pocket — signing in…"
         echo "→ \(command)"
         echo ""
@@ -225,7 +262,7 @@ enum ProviderAuthService {
           echo "Done. \(successHint)"
           echo "Return to Pocket; usage refreshes automatically."
         else
-          echo "Login exited with code $status. You can retry or close this window."
+          echo "Login exited with code $status."
         fi
         """
     }
@@ -237,11 +274,12 @@ enum ProviderAuthService {
         command: String,
         sourceFile: String,
         pocketFile: String,
+        containerFile: String,
         label: String
     ) -> String {
         let pocketDir = "\(home)/Library/Application Support/boringNotch/UsageAuth"
+        let containerDir = (containerFile as NSString).deletingLastPathComponent
         return """
-        clear
         \(exportPath)
         export HOME="\(home)"
         echo "Pocket — \(label) auth"
@@ -253,13 +291,15 @@ enum ProviderAuthService {
         \(command)
         status=$?
         echo ""
-        mkdir -p "\(pocketDir)"
+        mkdir -p "\(pocketDir)" "\(containerDir)"
         if [ -f "\(sourceFile)" ]; then
           cp "\(sourceFile)" "\(pocketFile)"
-          chmod 600 "\(pocketFile)" 2>/dev/null || true
+          cp "\(sourceFile)" "\(containerFile)"
+          chmod 600 "\(pocketFile)" "\(containerFile)" 2>/dev/null || true
           echo "✓ \(label) auth available:"
           echo "  → \(sourceFile)"
           echo "  → \(pocketFile)"
+          echo "  → \(containerFile)"
           echo ""
           echo "Done. Return to Pocket — usage should refresh within a few seconds."
           exit 0
@@ -273,45 +313,82 @@ enum ProviderAuthService {
         """
     }
 
-    // MARK: - Terminal launch
+    // MARK: - Launch (no .command / no Gatekeeper dialog)
 
-    private static func openInTerminal(command: String, title: String) -> Bool {
+    /// Write a private `.sh` (never opened as a document) and run it via Terminal AppleScript.
+    /// When `hideTerminal` is true the window is miniaturized and Terminal is not activated,
+    /// so the user mainly sees the browser OAuth flow.
+    @discardableResult
+    private static func launchAuthBridge(script: String, title: String, hideTerminal: Bool) -> Bool {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("boringNotch-provider-auth", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let safe = title.replacingOccurrences(of: " ", with: "-")
-        let scriptURL = dir.appendingPathComponent("\(safe).command")
-        let body = "#!/bin/zsh\nset +e\n\(command)\n"
+
+        let safe = title
+            .replacingOccurrences(of: " ", with: "-")
+            .replacingOccurrences(of: "/", with: "-")
+        // Use .sh — never .command (LaunchServices treats .command as an app and Gatekeeper blocks it).
+        let scriptURL = dir.appendingPathComponent("\(safe)-\(UUID().uuidString.prefix(8)).sh")
+        let body = "#!/bin/zsh\nset +e\n\(script)\n"
         do {
             try body.write(to: scriptURL, atomically: true, encoding: .utf8)
             try FileManager.default.setAttributes(
-                [.posixPermissions: 0o755],
+                [.posixPermissions: 0o700],
                 ofItemAtPath: scriptURL.path
             )
         } catch {
-            return openViaAppleScript(command: command)
+            return runViaAppleScript(inlineCommand: script, hideTerminal: hideTerminal)
         }
 
-        let opened = NSWorkspace.shared.open(scriptURL)
-        if opened { return true }
-        return openViaAppleScript(command: command)
+        // Strip quarantine if present so zsh can execute; we never `open` this file as a document.
+        stripQuarantine(at: scriptURL.path)
+
+        let path = scriptURL.path
+        let shellCommand = "/bin/zsh " + shellQuote(path)
+        return runViaAppleScript(inlineCommand: shellCommand, hideTerminal: hideTerminal)
     }
 
-    private static func openViaAppleScript(command: String) -> Bool {
-        let escaped = command
+    private static func runViaAppleScript(inlineCommand: String, hideTerminal: Bool) -> Bool {
+        let escaped = inlineCommand
             .replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "\"", with: "\\\"")
+
+        let hideBlock: String
+        if hideTerminal {
+            hideBlock = """
+              try
+                set miniaturized of front window to true
+              end try
+            """
+        } else {
+            hideBlock = "activate"
+        }
+
         let source = """
         tell application "Terminal"
-          activate
           do script "\(escaped)"
+          \(hideBlock)
         end tell
         """
         var error: NSDictionary?
-        if let script = NSAppleScript(source: source) {
-            script.executeAndReturnError(&error)
+        if let appleScript = NSAppleScript(source: source) {
+            appleScript.executeAndReturnError(&error)
             return error == nil
         }
         return false
+    }
+
+    private static func shellQuote(_ path: String) -> String {
+        "'" + path.replacingOccurrences(of: "'", with: "'\\''") + "'"
+    }
+
+    private static func stripQuarantine(at path: String) {
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/xattr")
+        task.arguments = ["-d", "com.apple.quarantine", path]
+        task.standardOutput = FileHandle.nullDevice
+        task.standardError = FileHandle.nullDevice
+        try? task.run()
+        task.waitUntilExit()
     }
 }

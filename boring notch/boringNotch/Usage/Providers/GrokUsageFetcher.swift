@@ -1,6 +1,10 @@
 //
 //  GrokUsageFetcher.swift
-//  boringNotch — Grok billing/usage ported from Orca rate-limits/grok-fetcher.ts + grok-auth.ts
+//  boringNotch — Grok billing/usage + durable OIDC refresh
+//
+//  Critical: never let a stale container mirror shadow a fresher ~/.grok/auth.json.
+//  Always pick the best session across all candidates, refresh when near expiry,
+//  and persist rotated tokens to every known path.
 //
 
 import Foundation
@@ -21,6 +25,12 @@ enum GrokUsageFetcher {
         var teamId: String?
         var expiresAtMs: Int64?
         var sourcePath: String
+        var mapKey: String
+        var refreshToken: String?
+        var oidcIssuer: String
+        var oidcClientId: String?
+        var rawEntry: [String: Any]
+        var fullFileJSON: [String: Any]
     }
 
     enum AuthRead {
@@ -29,64 +39,74 @@ enum GrokUsageFetcher {
         case ok(GrokAuthSession)
     }
 
+    static func hasStoredCredentials() -> Bool {
+        if case .ok = readAuthSession() { return true }
+        return authFileCandidates().contains { FileManager.default.fileExists(atPath: $0) }
+    }
+
     static func readAuthSession() -> AuthRead {
-        let candidates = [
-            UsagePaths.grokAuthFile,
-            UsagePaths.pocketGrokAuthFile
-        ]
-        guard let (data, path) = UsagePaths.firstExistingData(among: candidates) else {
-            return .missing
-        }
-        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            return .error("Grok auth file is invalid")
-        }
+        let candidates = authFileCandidates()
+        let fm = FileManager.default
+        var best: GrokAuthSession?
+        var bestScore: Int64 = .min
 
-        var preferred: GrokAuthSession?
-        var fallback: GrokAuthSession?
-        var expiredPreferred: GrokAuthSession?
-
-        let now = Int64(Date().timeIntervalSince1970 * 1000)
-
-        for (key, value) in json {
-            guard let entry = value as? [String: Any],
-                  let token = entry["key"] as? String,
-                  !token.isEmpty else { continue }
-            let session = GrokAuthSession(
-                accessToken: token,
-                userId: entry["user_id"] as? String,
-                email: entry["email"] as? String,
-                teamId: entry["team_id"] as? String,
-                expiresAtMs: RateLimitFormatting.parseResetTimestamp(entry["expires_at"]),
-                sourcePath: path
+        for path in candidates {
+            guard fm.fileExists(atPath: path),
+                  let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
+                  !data.isEmpty,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                continue
+            }
+            let mtimeMs = Int64(
+                ((try? fm.attributesOfItem(atPath: path)[.modificationDate] as? Date)
+                    ?? .distantPast).timeIntervalSince1970 * 1000
             )
-            let isPreferred = key == preferredIssuer || key.hasPrefix("\(preferredIssuer)::")
-            let isFresh = session.expiresAtMs.map { $0 > now } ?? true
+            for (key, value) in json {
+                guard let entry = value as? [String: Any],
+                      let token = entry["key"] as? String,
+                      !token.isEmpty else { continue }
 
-            if isPreferred {
-                if isFresh {
-                    if preferred == nil { preferred = session }
-                } else if expiredPreferred == nil {
-                    expiredPreferred = session
+                let expiresAtMs = RateLimitFormatting.parseResetTimestamp(entry["expires_at"])
+                let isPreferred = key == preferredIssuer || key.hasPrefix("\(preferredIssuer)::")
+                // Score: prefer non-expired, preferred issuer, later expiry, newer file.
+                var score: Int64 = mtimeMs / 1000
+                if isPreferred { score += 1_000_000_000 }
+                if let exp = expiresAtMs {
+                    score += exp / 1000
+                    let now = Int64(Date().timeIntervalSince1970 * 1000)
+                    if exp > now { score += 5_000_000_000 }
+                } else {
+                    score += 2_000_000_000 // unknown expiry still usable
                 }
-            } else if isFresh {
-                if fallback == nil { fallback = session }
-            } else if fallback == nil {
-                fallback = session // keep as last resort; API may still accept
+
+                let session = GrokAuthSession(
+                    accessToken: token,
+                    userId: entry["user_id"] as? String,
+                    email: entry["email"] as? String,
+                    teamId: entry["team_id"] as? String,
+                    expiresAtMs: expiresAtMs,
+                    sourcePath: path,
+                    mapKey: key,
+                    refreshToken: entry["refresh_token"] as? String,
+                    oidcIssuer: (entry["oidc_issuer"] as? String) ?? preferredIssuer,
+                    oidcClientId: (entry["oidc_client_id"] as? String)
+                        ?? key.split(separator: ":").last.map(String.init),
+                    rawEntry: entry,
+                    fullFileJSON: json
+                )
+                if best == nil || score > bestScore {
+                    best = session
+                    bestScore = score
+                }
             }
         }
 
-        // Prefer fresh preferred → fresh fallback → expired preferred (API may still work / refresh).
-        if let preferred { return .ok(preferred) }
-        if let fallback { return .ok(fallback) }
-        if let expiredPreferred { return .ok(expiredPreferred) }
-        return .error("Grok auth file is invalid")
+        guard let best else { return .missing }
+        return .ok(best)
     }
 
     static func isAuthConfigured() -> Bool {
-        if case .ok = readAuthSession() { return true }
-        // File present even if parse fails counts as configured for UI.
-        return FileManager.default.fileExists(atPath: UsagePaths.grokAuthFile)
-            || FileManager.default.fileExists(atPath: UsagePaths.pocketGrokAuthFile)
+        hasStoredCredentials()
     }
 
     static func fetch(signal: CancellationToken? = nil) async -> ProviderRateLimits {
@@ -94,17 +114,126 @@ enum GrokUsageFetcher {
             return .placeholder(provider: .grok, status: .error, error: "Rate-limit fetch aborted")
         }
 
-        switch readAuthSession() {
+        switch await loadSessionWithRefresh(signal: signal) {
         case .missing:
             return .placeholder(provider: .grok, status: .unavailable, error: "Not signed in to Grok — use Sign in")
         case .error(let message):
             return .placeholder(provider: .grok, status: .error, error: message)
         case .ok(let session):
-            // Why: do NOT hard-fail on expires_at alone — Grok tokens often still work
-            // (or refresh server-side) past local metadata. Only treat 401 as expired.
-            return await fetchBilling(session: session, signal: signal)
+            let result = await fetchBilling(session: session, signal: signal)
+            // On 401, force one OIDC refresh + retry (covers clock skew / early revoke).
+            if result.status == .error,
+               (result.error?.contains("401") == true
+                || result.error?.contains("403") == true
+                || result.error?.localizedCaseInsensitiveContains("expired") == true),
+               session.refreshToken != nil {
+                if let refreshed = await forceRefresh(session: session) {
+                    return await fetchBilling(session: refreshed, signal: signal)
+                }
+            }
+            return result
         }
     }
+
+    // MARK: - Refresh
+
+    private static func loadSessionWithRefresh(signal: CancellationToken?) async -> AuthRead {
+        let read = readAuthSession()
+        guard case .ok(var session) = read else { return read }
+
+        // Mirror the chosen (best) session everywhere so container never lags behind ~/.grok.
+        persistSession(session)
+
+        let expiring = GrokOAuthRefresh.isExpiring(
+            GrokOAuthRefresh.Entry(
+                mapKey: session.mapKey,
+                accessToken: session.accessToken,
+                refreshToken: session.refreshToken,
+                userId: session.userId,
+                email: session.email,
+                teamId: session.teamId,
+                expiresAtMs: session.expiresAtMs,
+                oidcIssuer: session.oidcIssuer,
+                oidcClientId: session.oidcClientId,
+                raw: session.rawEntry
+            )
+        )
+        guard expiring, session.refreshToken != nil else {
+            return .ok(session)
+        }
+        if signal?.isCancelled == true { return .ok(session) }
+        if let refreshed = await forceRefresh(session: session) {
+            session = refreshed
+        }
+        return .ok(session)
+    }
+
+    private static func forceRefresh(session: GrokAuthSession) async -> GrokAuthSession? {
+        let entry = GrokOAuthRefresh.Entry(
+            mapKey: session.mapKey,
+            accessToken: session.accessToken,
+            refreshToken: session.refreshToken,
+            userId: session.userId,
+            email: session.email,
+            teamId: session.teamId,
+            expiresAtMs: session.expiresAtMs,
+            oidcIssuer: session.oidcIssuer,
+            oidcClientId: session.oidcClientId,
+            raw: session.rawEntry
+        )
+        guard let updatedRaw = await GrokOAuthRefresh.refresh(entry: entry) else { return nil }
+
+        var full = session.fullFileJSON
+        full[session.mapKey] = updatedRaw
+        let newSession = GrokAuthSession(
+            accessToken: (updatedRaw["key"] as? String) ?? session.accessToken,
+            userId: (updatedRaw["user_id"] as? String) ?? session.userId,
+            email: (updatedRaw["email"] as? String) ?? session.email,
+            teamId: (updatedRaw["team_id"] as? String) ?? session.teamId,
+            expiresAtMs: RateLimitFormatting.parseResetTimestamp(updatedRaw["expires_at"]),
+            sourcePath: session.sourcePath,
+            mapKey: session.mapKey,
+            refreshToken: (updatedRaw["refresh_token"] as? String) ?? session.refreshToken,
+            oidcIssuer: session.oidcIssuer,
+            oidcClientId: session.oidcClientId,
+            rawEntry: updatedRaw,
+            fullFileJSON: full
+        )
+        persistSession(newSession)
+        return newSession
+    }
+
+    private static func persistSession(_ session: GrokAuthSession) {
+        guard let data = try? JSONSerialization.data(withJSONObject: session.fullFileJSON, options: [.prettyPrinted]),
+              let text = String(data: data, encoding: .utf8) else { return }
+        let now = Date()
+        // Always write refreshed/best session to all durable locations.
+        for path in [
+            UsagePaths.containerGrokAuthFile,
+            UsagePaths.pocketGrokAuthFile,
+            UsagePaths.grokAuthFile
+        ] {
+            let dir = (path as NSString).deletingLastPathComponent
+            try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+            try? data.write(to: URL(fileURLWithPath: path), options: [.atomic])
+            try? FileManager.default.setAttributes(
+                [.posixPermissions: 0o600, .modificationDate: now],
+                ofItemAtPath: path
+            )
+            _ = text // silence
+        }
+    }
+
+    private static func authFileCandidates() -> [String] {
+        // Order does not matter — we score by freshness. Include all mirrors.
+        [
+            UsagePaths.grokAuthFile,
+            UsagePaths.pocketGrokAuthFile,
+            UsagePaths.containerGrokAuthFile
+        ]
+    }
+
+    // MARK: - Billing
 
     private static func fetchBilling(session: GrokAuthSession, signal: CancellationToken?) async -> ProviderRateLimits {
         do {
@@ -122,7 +251,6 @@ enum GrokUsageFetcher {
                 }
             }
 
-            // If both windows missing, still show ok only if we got a config — else error.
             if weekly == nil && monthly == nil {
                 return .placeholder(
                     provider: .grok,
@@ -141,6 +269,7 @@ enum GrokUsageFetcher {
             meta.source = .oauth
             meta.authProvenance = provenance
             meta.credentialSource = session.sourcePath
+            meta.lastSuccessfulSource = .oauth
 
             return ProviderRateLimits(
                 provider: .grok,
@@ -158,7 +287,7 @@ enum GrokUsageFetcher {
             return .placeholder(
                 provider: .grok,
                 status: .error,
-                error: "Grok sign-in expired — use Sign in"
+                error: "Grok session expired (HTTP \(err.code))"
             )
         } catch {
             return .placeholder(provider: .grok, status: .error, error: error.localizedDescription)

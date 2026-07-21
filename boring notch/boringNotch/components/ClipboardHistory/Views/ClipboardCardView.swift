@@ -121,7 +121,7 @@ struct ClipboardCardView: View {
                     .frame(width: 14, height: 14)
                 if isPinned {
                     Image(systemName: "pin.fill")
-                        .font(.system(size: 8))
+                        .font(.notch(size: 8))
                         .foregroundStyle(isVisualMedia ? .white.opacity(0.95) : .orange)
                 }
                 Spacer(minLength: 2)
@@ -202,7 +202,7 @@ struct ClipboardCardView: View {
             // Video: play badge so it is clearly distinct from a still image
             if contentKind == .video {
                 Image(systemName: "play.circle.fill")
-                    .font(.system(size: 28))
+                    .font(.notch(size: 28))
                     .symbolRenderingMode(.palette)
                     .foregroundStyle(.white, .black.opacity(0.45))
                     .shadow(color: .black.opacity(0.35), radius: 3, y: 1)
@@ -220,7 +220,7 @@ struct ClipboardCardView: View {
                     .controlSize(.small)
             } else {
                 Image(systemName: systemName)
-                    .font(.title2)
+                    .font(.notch(.title2))
                     .foregroundStyle(.secondary)
             }
         }
@@ -248,7 +248,7 @@ struct ClipboardCardView: View {
     @ViewBuilder
     private var footerTrailing: some View {
         Text(relativeTime)
-            .font(.system(size: 9, weight: .medium, design: .rounded))
+            .font(.notch(size: 9, weight: .medium))
             .foregroundStyle(isVisualMedia ? Color.white.opacity(0.9) : Color.secondary)
             .monospacedDigit()
     }
@@ -267,7 +267,7 @@ struct ClipboardCardView: View {
                         .frame(width: 28, height: 28)
                 }
                 Text(fileDisplayName)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.notch(size: 11, weight: .medium))
                     .foregroundStyle(.primary)
                     .lineLimit(lineLimitForHeight)
                     .multilineTextAlignment(.leading)
@@ -275,14 +275,14 @@ struct ClipboardCardView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         case .link:
             Text(previewText)
-                .font(.system(size: 11))
+                .font(.notch(size: 11))
                 .foregroundStyle(Color.accentColor)
                 .lineLimit(lineLimitForHeight)
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         case .text:
             Text(previewText)
-                .font(.system(size: 11))
+                .font(.notch(size: 11))
                 .foregroundStyle(Color.primary.opacity(0.95))
                 .lineLimit(lineLimitForHeight)
                 .multilineTextAlignment(.leading)

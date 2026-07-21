@@ -116,7 +116,7 @@ struct UsageSettingsView: View {
             } header: {
                 Text(L("Subscription usage"))
             } footer: {
-                Text(L("Sign in opens Terminal with the provider CLI. For Claude, Terminal also exports the session to a local file (Pocket never shows a Keychain password dialog). If you already signed in, use Sync Claude session, then Refresh usage."))
+                Text(L("Sign in opens the browser for the provider. Session files are updated in the background so Pocket can read usage (no Keychain password dialog). If you already signed in via CLI, use Sync Claude session, then Refresh usage."))
                     .font(.caption)
             }
 
@@ -190,10 +190,10 @@ struct UsageSettingsView: View {
     private func signIn(_ provider: UsageProviderID) {
         let ok = ProviderAuthService.beginSignIn(for: provider)
         if ok {
-            signInMessage = L("Terminal opened for sign-in. Usage refreshes automatically when login finishes.")
+            signInMessage = L("Browser opened for sign-in. Usage refreshes automatically when login finishes.")
             scheduleUsagePolls()
         } else {
-            signInMessage = L("Could not open Terminal. Run the CLI login command manually.")
+            signInMessage = L("Could not open the browser. Open the provider login page manually.")
             ProviderAuthService.openAccountPage(for: provider)
         }
     }
@@ -201,10 +201,10 @@ struct UsageSettingsView: View {
     private func syncClaudeOnly() {
         let ok = ProviderAuthService.syncClaudeCredentialsOnly()
         if ok {
-            signInMessage = L("Terminal opened to export Claude session. Return here after it says Done.")
+            signInMessage = L("Exporting Claude session in the background. Return here after a few seconds.")
             scheduleUsagePolls()
         } else {
-            signInMessage = L("Could not open Terminal. Run the CLI login command manually.")
+            signInMessage = L("Could not start credential export. Try Sign in again.")
         }
     }
 

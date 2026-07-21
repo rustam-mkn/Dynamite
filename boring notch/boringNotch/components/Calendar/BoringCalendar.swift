@@ -104,7 +104,7 @@ struct WheelPicker: View {
 
     private func dayText(date: String, isToday: Bool, isSelected: Bool) -> some View {
         Text(date)
-            .font(.caption)
+            .font(.notch(.caption))
             .foregroundColor(isSelected ? .white : Color(white: 0.65))
     }
 
@@ -118,7 +118,7 @@ struct WheelPicker: View {
                         .stroke(Color.gray.opacity(0.3), lineWidth: 0)
                 )
             Text("\(date.date)")
-                .font(.body)
+                .font(.notch(.body))
                 .fontWeight(.medium)
                 .foregroundColor(isSelected ? .white : Color(white: isToday ? 0.9 : 0.65))
         }
@@ -188,11 +188,11 @@ struct CalendarView: View {
             HStack(alignment: .top, spacing: 8) {
                 VStack(alignment: .leading) {
                     Text(selectedDate.formatted(.dateTime.month(.abbreviated)))
-                        .font(.title3)
+                        .font(.notch(.title3))
                         .fontWeight(.semibold)
                         .foregroundColor(.white)
                     Text(selectedDate.formatted(.dateTime.year()))
-                        .font(.title3)
+                        .font(.notch(.title3))
                         .fontWeight(.light)
                         .foregroundColor(Color(white: 0.65))
                 }
@@ -251,13 +251,13 @@ struct EmptyEventsView: View {
     var body: some View {
         VStack {
             Image(systemName: "calendar.badge.checkmark")
-                .font(.title)
+                .font(.notch(.title))
                 .foregroundColor(Color(white: 0.65))
             Text(Calendar.current.isDateInToday(selectedDate) ? "No events today" : "No events")
-                .font(.subheadline)
+                .font(.notch(.subheadline))
                 .foregroundColor(.white)
             Text("Enjoy your free time!")
-                .font(.caption)
+                .font(.notch(.caption))
                 .foregroundColor(Color(white: 0.65))
         }
     }
@@ -367,21 +367,21 @@ struct EventListView: View {
                     .opacity(1.0)  // Ensure the toggle is always fully opaque
                     HStack {
                         Text(event.title)
-                            .font(.callout)
+                            .font(.notch(.callout))
                             .foregroundColor(.white)
                             .lineLimit(showFullEventTitles ? nil : 1)
                         Spacer(minLength: 0)
                         VStack(alignment: .trailing, spacing: 4) {
                             if event.isAllDay {
                                 Text("All-day")
-                                    .font(.caption)
+                                    .font(.notch(.caption))
                                     .fontWeight(.medium)
                                     .foregroundColor(.white)
                                     .lineLimit(1)
                             } else {
                                 Text(event.start, style: .time)
                                     .foregroundColor(.white)
-                                    .font(.caption)
+                                    .font(.notch(.caption))
                             }
                         }
                     }
@@ -404,14 +404,14 @@ struct EventListView: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(event.title)
-                            .font(.callout)
+                            .font(.notch(.callout))
                             .fontWeight(.medium)
                             .foregroundColor(.white)
                             .lineLimit(showFullEventTitles ? nil : 2)
 
                         if let location = event.location, !location.isEmpty {
                             Text(location)
-                                .font(.caption)
+                                .font(.notch(.caption))
                                 .foregroundColor(Color(white: 0.65))
                                 .lineLimit(1)
                         }
@@ -420,7 +420,7 @@ struct EventListView: View {
                     VStack(alignment: .trailing, spacing: 4) {
                         if event.isAllDay {
                             Text("All-day")
-                                .font(.caption)
+                                .font(.notch(.caption))
                                 .fontWeight(.medium)
                                 .foregroundColor(.white)
                                 .lineLimit(1)
@@ -431,7 +431,7 @@ struct EventListView: View {
                                 .foregroundColor(Color(white: 0.65))
                         }
                     }
-                    .font(.caption)
+                    .font(.notch(.caption))
                     .frame(minWidth: 44, alignment: .trailing)
                 }
                 .opacity(

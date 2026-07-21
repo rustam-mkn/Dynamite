@@ -101,6 +101,8 @@ struct ContentView: View {
                     )
                     .padding([.horizontal, .bottom], vm.notchState == .open ? 12 : 0)
                     .background(.black)
+                    // Notch-only typography; Settings window never uses this modifier.
+                    .notchTypography()
                     .clipShape(currentNotchShape)
                     .overlay(alignment: .top) {
                         Rectangle()
@@ -303,7 +305,7 @@ struct ContentView: View {
                         HStack(spacing: 0) {
                             HStack {
                                 Text(batteryModel.statusText)
-                                    .font(.subheadline)
+                                    .font(.notch(.subheadline))
                                     .foregroundStyle(.white)
                             }
 

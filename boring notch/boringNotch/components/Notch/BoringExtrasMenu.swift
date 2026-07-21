@@ -20,7 +20,7 @@ struct BoringLargeButtons: View {
                     VStack(spacing: 8) {
                         icon.resizable()
                             .aspectRatio(contentMode: .fit).frame(width:20)
-                        Text(title).font(.body)
+                        Text(title).font(.notch(.body))
                     }
                 }
             }).buttonStyle(PlainButtonStyle()).shadow(color: .black.opacity(0.5), radius: 10)
@@ -63,7 +63,7 @@ struct BoringExtrasMenu : View {
                 VStack(spacing: 8) {
                     Image(systemName: "gear").resizable()
                         .aspectRatio(contentMode: .fit).frame(width:20)
-                    Text("Settings").font(.body)
+                    Text("Settings").font(.notch(.body))
                 }
             }
         }

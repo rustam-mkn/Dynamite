@@ -118,11 +118,24 @@ enum CodexUsageFetcher {
     private static func readBackendAuthHeaders() -> AuthHeaders? {
         let candidates = [
             UsagePaths.codexAuthFile,
-            UsagePaths.pocketCodexAuthFile
+            UsagePaths.pocketCodexAuthFile,
+            UsagePaths.containerCodexAuthFile
         ]
-        guard let (data, path) = UsagePaths.firstExistingData(among: candidates),
+        // Prefer newest file — never let a stale container shadow ~/.codex/auth.json.
+        guard let (data, path) = UsagePaths.newestExistingData(among: candidates),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             return nil
+        }
+
+        // Mirror freshest session into durable paths (won't clobber newer destinations).
+        if let text = String(data: data, encoding: .utf8) {
+            let mtime = try? FileManager.default.attributesOfItem(atPath: path)[.modificationDate] as? Date
+            _ = UsagePaths.persistAuthJSONIfNewer(
+                text,
+                containerPath: UsagePaths.containerCodexAuthFile,
+                homePath: UsagePaths.pocketCodexAuthFile,
+                sourceMTime: mtime
+            )
         }
 
         // Standard ChatGPT/Codex OAuth shape

@@ -180,7 +180,7 @@ struct MusicControlsView: View {
                         textColor: musicManager.isFetchingLyrics ? .gray.opacity(0.7) : .gray,
                         frameWidth: width
                     )
-                    .font(isPersian ? .custom("Vazirmatn-Regular", size: NSFont.preferredFont(forTextStyle: .subheadline).pointSize) : .subheadline)
+                    .font(isPersian ? .custom("Vazirmatn-Regular", size: NSFont.preferredFont(forTextStyle: .subheadline).pointSize) : .notch(.subheadline))
                     .lineLimit(1)
                     .opacity(musicManager.isPlaying ? 1 : 0)
                     .transition(.opacity.combined(with: .move(edge: .top)))
@@ -345,7 +345,7 @@ struct VolumeControlView: View {
                 }
             }) {
                 Image(systemName: volumeIcon)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.notch(size: 14, weight: .medium))
                     .foregroundColor(musicManager.volumeControlSupported ? .white : .gray)
             }
             .buttonStyle(PlainButtonStyle())
@@ -505,7 +505,7 @@ struct MusicSliderView: View {
                 Defaults[.playerColorTinting]
                     ? Color(nsColor: color).ensureMinimumBrightness(factor: 0.6) : .gray
             )
-            .font(.caption)
+            .font(.notch(.caption))
         }
         .onChange(of: currentDate) {
            guard !dragging, timestampDate.timeIntervalSince(lastDragged) > -1 else { return }

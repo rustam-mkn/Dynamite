@@ -95,7 +95,7 @@ struct BoringHeader: View {
                     }
                 }
             }
-            .font(.system(.headline, design: .rounded))
+            .font(.notch(.headline))
             .frame(maxWidth: .infinity, alignment: .trailing)
             .opacity(vm.notchState == .closed ? 0 : 1)
             .blur(radius: vm.notchState == .closed ? 20 : 0)

@@ -102,41 +102,41 @@ struct BatteryMenuView: View {
 
             HStack {
                 Text("Battery Status")
-                    .font(.headline)
+                    .font(.notch(.headline))
                     .fontWeight(.semibold)
                 Spacer()
                 Text("\(Int(levelBattery))%")
-                    .font(.headline)
+                    .font(.notch(.headline))
                     .fontWeight(.semibold)
             }
             
             VStack(alignment: .leading, spacing: 8) {
                 Text("Max Capacity: \(Int(maxCapacity))%")
-                    .font(.subheadline)
+                    .font(.notch(.subheadline))
                     .fontWeight(.regular)
                 if isInLowPowerMode {
                     Label("Low Power Mode", systemImage: "bolt.circle")
-                        .font(.subheadline)
+                        .font(.notch(.subheadline))
                         .fontWeight(.regular)
                 }
                 if isCharging {
                     Label("Charging", systemImage: "bolt.fill")
-                        .font(.subheadline)
+                        .font(.notch(.subheadline))
                         .fontWeight(.regular)
                 }
                 if isPluggedIn {
                     Label("Plugged In", systemImage: "powerplug.fill")
-                        .font(.subheadline)
+                        .font(.notch(.subheadline))
                         .fontWeight(.regular)
                 }
                 if timeToFullCharge > 0 {
                     Label("Time to Full Charge: \(timeToFullCharge) min", systemImage: "clock")
-                        .font(.subheadline)
+                        .font(.notch(.subheadline))
                         .fontWeight(.regular)
                 }
                 if !isCharging && isPluggedIn && levelBattery >= 80 {
                     Label("Charging on Hold: Desktop Mode", systemImage: "desktopcomputer")
-                        .font(.subheadline)
+                        .font(.notch(.subheadline))
                         .fontWeight(.regular)
                 }
                     
@@ -195,7 +195,7 @@ struct BoringBatteryView: View {
             HStack {
                 if Defaults[.showBatteryPercentage] {
                     Text("\(Int32(levelBattery))%")
-                        .font(.callout)
+                        .font(.notch(.callout))
                         .foregroundStyle(.white)
                 }
                 BatteryView(

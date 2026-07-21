@@ -6,7 +6,7 @@
 import Foundation
 import SwiftUI
 
-struct RateLimitWindow: Equatable, Sendable {
+struct RateLimitWindow: Equatable, Sendable, Codable {
     /// Percentage of the window consumed (0–100).
     var usedPercent: Double
     /// Window duration in minutes: 300 (5h) or 10080 (7d).
@@ -17,7 +17,7 @@ struct RateLimitWindow: Equatable, Sendable {
     var resetDescription: String?
 }
 
-enum ProviderRateLimitStatus: String, Equatable, Sendable {
+enum ProviderRateLimitStatus: String, Equatable, Sendable, Codable {
     case idle
     case fetching
     case ok
@@ -25,7 +25,7 @@ enum ProviderRateLimitStatus: String, Equatable, Sendable {
     case unavailable
 }
 
-struct RateLimitBucket: Equatable, Sendable {
+struct RateLimitBucket: Equatable, Sendable, Codable {
     var name: String
     var usedPercent: Double
     var windowMinutes: Int
@@ -42,13 +42,13 @@ struct RateLimitBucket: Equatable, Sendable {
     }
 }
 
-enum UsageRateLimitSource: String, Equatable, Sendable {
+enum UsageRateLimitSource: String, Equatable, Sendable, Codable {
     case oauth
     case cli
     case web
 }
 
-enum UsageRateLimitFailureKind: String, Equatable, Sendable {
+enum UsageRateLimitFailureKind: String, Equatable, Sendable, Codable {
     case missingCredentials = "missing-credentials"
     case staleToken = "stale-token"
     case refreshableCredentialsWithoutToken = "refreshable-credentials-without-token"
@@ -65,7 +65,7 @@ enum UsageRateLimitFailureKind: String, Equatable, Sendable {
     case unknown
 }
 
-struct UsageRateLimitMetadata: Equatable, Sendable {
+struct UsageRateLimitMetadata: Equatable, Sendable, Codable {
     var source: UsageRateLimitSource?
     var attemptedSources: [UsageRateLimitSource]?
     var failureKind: UsageRateLimitFailureKind?
@@ -115,7 +115,7 @@ enum UsageProviderID: String, CaseIterable, Identifiable, Sendable, Codable {
     }
 }
 
-struct ProviderRateLimits: Equatable, Sendable, Identifiable {
+struct ProviderRateLimits: Equatable, Sendable, Identifiable, Codable {
     var provider: UsageProviderID
     var session: RateLimitWindow?
     var weekly: RateLimitWindow?
@@ -128,6 +128,11 @@ struct ProviderRateLimits: Equatable, Sendable, Identifiable {
     var usageMetadata: UsageRateLimitMetadata?
 
     var id: String { provider.rawValue }
+
+    var hasUsableWindows: Bool {
+        session != nil || weekly != nil || monthly != nil || fableWeekly != nil
+            || (buckets?.isEmpty == false)
+    }
 
     static func placeholder(
         provider: UsageProviderID,
@@ -149,7 +154,7 @@ struct ProviderRateLimits: Equatable, Sendable, Identifiable {
     }
 }
 
-struct RateLimitState: Equatable, Sendable {
+struct RateLimitState: Equatable, Sendable, Codable {
     var claude: ProviderRateLimits?
     var codex: ProviderRateLimits?
     var gemini: ProviderRateLimits?

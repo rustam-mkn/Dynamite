@@ -166,10 +166,10 @@ struct ClipboardHistoryView: View {
     private var emptyState: some View {
         VStack(spacing: 4) {
             Image(systemName: "doc.on.clipboard")
-                .font(.title3)
+                .font(.notch(.title3))
                 .foregroundStyle(.secondary)
             Text(L("Clipboard is empty"))
-                .font(.caption)
+                .font(.notch(.caption))
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
