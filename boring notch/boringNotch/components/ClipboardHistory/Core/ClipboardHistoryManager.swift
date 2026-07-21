@@ -79,6 +79,8 @@ final class ClipboardHistoryManager: ObservableObject {
         )
         do {
             let results = try ClipboardStorage.shared.context.fetch(descriptor)
+            // Repair media that only held fragile file URLs (pre-vault history).
+            ClipboardMediaVault.migrateIfNeeded(results)
             allItems = sort(results)
             limitHistorySize(to: Defaults[.clipboardHistorySize])
             publish()
@@ -92,6 +94,10 @@ final class ClipboardHistoryManager: ObservableObject {
     @discardableResult
     func add(_ item: HistoryItem) -> HistoryItem {
         let context = ClipboardStorage.shared.context
+
+        // Embed image bytes + vault-copy video/image files while sources are still readable.
+        ClipboardMediaVault.materialize(item)
+
         context.insert(item)
 
         if let existing = findSimilarItem(item) {
@@ -108,6 +114,7 @@ final class ClipboardHistoryManager: ObservableObject {
             if item.contents.isEmpty {
                 item.contents = existing.contents
             }
+            ClipboardMediaVault.removeFiles(for: existing)
             context.delete(existing)
             allItems.removeAll { $0.persistentModelID == existing.persistentModelID }
         }
@@ -122,6 +129,7 @@ final class ClipboardHistoryManager: ObservableObject {
     }
 
     func delete(_ item: HistoryItem) {
+        ClipboardMediaVault.removeFiles(for: item)
         ClipboardStorage.shared.context.delete(item)
         allItems.removeAll { $0.persistentModelID == item.persistentModelID }
         try? ClipboardStorage.shared.context.save()
@@ -137,6 +145,7 @@ final class ClipboardHistoryManager: ObservableObject {
     func clearUnpinned() {
         let unpinned = allItems.filter { !$0.isPinned }
         for item in unpinned {
+            ClipboardMediaVault.removeFiles(for: item)
             ClipboardStorage.shared.context.delete(item)
         }
         allItems.removeAll { !$0.isPinned }
@@ -284,6 +293,7 @@ final class ClipboardHistoryManager: ObservableObject {
         guard unpinned.count > maxSize, maxSize >= 0 else { return }
         let excess = Array(unpinned.suffix(from: maxSize))
         for item in excess {
+            ClipboardMediaVault.removeFiles(for: item)
             ClipboardStorage.shared.context.delete(item)
             allItems.removeAll { $0.persistentModelID == item.persistentModelID }
         }

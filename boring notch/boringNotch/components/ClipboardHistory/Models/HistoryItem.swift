@@ -110,7 +110,11 @@ final class HistoryItem {
     var imageData: Data? {
         var data: Data?
         data = contentData([.tiff, .png, .jpeg, .heic, .image])
-        if data == nil, universalClipboardImage, let url = fileURLs.first {
+        // Prefer durable vault / still-reachable image file (post-restart safe when vaulted).
+        if data == nil, let url = imageFileURL, FileManager.default.isReadableFile(atPath: url.path) {
+            data = try? Data(contentsOf: url)
+        } else if data == nil, universalClipboardImage, let url = fileURLs.first,
+                  FileManager.default.isReadableFile(atPath: url.path) {
             data = try? Data(contentsOf: url)
         }
         return data
@@ -122,8 +126,9 @@ final class HistoryItem {
         }
 
         // Finder copies image files as file URLs rather than bitmap data.
-        // Keep the file URL for paste support, but use the file itself for the visual preview.
-        guard let imageURL = imageFileURL else { return nil }
+        // Vault materialization rewrites these to Application Support after capture.
+        guard let imageURL = imageFileURL,
+              FileManager.default.isReadableFile(atPath: imageURL.path) else { return nil }
         return NSImage(contentsOf: imageURL)
     }
 

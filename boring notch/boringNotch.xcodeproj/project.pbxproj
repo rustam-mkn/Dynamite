@@ -19,6 +19,7 @@
 		P0C8792D8CB597DB707689C9 /* KeyboardLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = P0C81F30DB20E10BB1BF9608 /* KeyboardLayout.swift */; };
 		P0CAD5E2DC6E56DEE526B307 /* ClipboardStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = P0C9EDFD6503568026024691 /* ClipboardStorage.swift */; };
 		P0C5AB79B2C0B9C47B7C40DE /* ClipboardSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = P0CE556954C62F8B73A2FF85 /* ClipboardSearch.swift */; };
+		P0CMEDIAVAULT01BFILE0001 /* ClipboardMediaVault.swift in Sources */ = {isa = PBXBuildFile; fileRef = P0CMEDIAVAULT01FREF0001 /* ClipboardMediaVault.swift */; };
 		P0C0A3F0C9761E0AABCCC9A6 /* ClipboardService.swift in Sources */ = {isa = PBXBuildFile; fileRef = P0CF7E0FE7E7C2B8A01D8338 /* ClipboardService.swift */; };
 		P0CEB6D0FD25E40C3228DA55 /* ClipboardHistoryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = P0C596B5CFA91E7B2B582C66 /* ClipboardHistoryManager.swift */; };
 		P0C1A54B0F9D40D16D5DAE5A /* ClipboardCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = P0CCDA23BE2B479BB8EB6021 /* ClipboardCardView.swift */; };
@@ -214,6 +215,7 @@
 		P0C81F30DB20E10BB1BF9608 /* KeyboardLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardLayout.swift; sourceTree = "<group>"; };
 		P0C9EDFD6503568026024691 /* ClipboardStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardStorage.swift; sourceTree = "<group>"; };
 		P0CE556954C62F8B73A2FF85 /* ClipboardSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardSearch.swift; sourceTree = "<group>"; };
+		P0CMEDIAVAULT01FREF0001 /* ClipboardMediaVault.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardMediaVault.swift; sourceTree = "<group>"; };
 		P0CF7E0FE7E7C2B8A01D8338 /* ClipboardService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardService.swift; sourceTree = "<group>"; };
 		P0C596B5CFA91E7B2B582C66 /* ClipboardHistoryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardHistoryManager.swift; sourceTree = "<group>"; };
 		P0CCDA23BE2B479BB8EB6021 /* ClipboardCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardCardView.swift; sourceTree = "<group>"; };
@@ -409,6 +411,7 @@
 				P0C81F30DB20E10BB1BF9608 /* KeyboardLayout.swift */,
 				P0C9EDFD6503568026024691 /* ClipboardStorage.swift */,
 				P0CE556954C62F8B73A2FF85 /* ClipboardSearch.swift */,
+				P0CMEDIAVAULT01FREF0001 /* ClipboardMediaVault.swift */,
 				P0CF7E0FE7E7C2B8A01D8338 /* ClipboardService.swift */,
 				P0C596B5CFA91E7B2B582C66 /* ClipboardHistoryManager.swift */,
 			);
@@ -1031,6 +1034,7 @@
 				P0C8792D8CB597DB707689C9 /* KeyboardLayout.swift in Sources */,
 				P0CAD5E2DC6E56DEE526B307 /* ClipboardStorage.swift in Sources */,
 				P0C5AB79B2C0B9C47B7C40DE /* ClipboardSearch.swift in Sources */,
+				P0CMEDIAVAULT01BFILE0001 /* ClipboardMediaVault.swift in Sources */,
 				P0C0A3F0C9761E0AABCCC9A6 /* ClipboardService.swift in Sources */,
 				P0CEB6D0FD25E40C3228DA55 /* ClipboardHistoryManager.swift in Sources */,
 				P0C1A54B0F9D40D16D5DAE5A /* ClipboardCardView.swift in Sources */,
