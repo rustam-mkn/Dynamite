@@ -337,90 +337,114 @@ struct ProviderDetailPanel: View {
     var onRefresh: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Top bar: back + title
-            HStack(spacing: 8) {
-                Button(action: onBack) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "chevron.left")
-                            .font(.notch(size: 11, weight: .semibold))
-                        Text(L("Back"))
-                            .font(.notch(size: 11, weight: .medium))
-                    }
-                    .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
+        GeometryReader { geo in
+            // Match compact Usage list metrics (mascot + provider cards).
+            let sidePad: CGFloat = 10
+            let gap: CGFloat = 10
+            let logoSide = min(max(geo.size.height - 16, 56), 120)
 
-                Spacer()
+            HStack(alignment: .center, spacing: gap) {
+                // Left: large square logo (UsageMascotView language)
+                ProviderDetailLogoSquare(provider: limits.provider, side: logoSide)
+                    .padding(.leading, sidePad)
 
-                UsageRefreshButton(isRefreshing: isFetching, action: onRefresh)
-            }
-            .padding(.horizontal, 12)
-            .padding(.top, 6)
-            .padding(.bottom, 4)
-
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 12) {
-                    // Header: icon + name + updated
-                    VStack(alignment: .leading, spacing: 3) {
-                        HStack(spacing: 6) {
-                            ProviderIconView(provider: limits.provider, size: 15)
-                            Text(limits.provider.displayName)
-                                .font(.notch(size: 13, weight: .semibold))
-                                .foregroundStyle(.white)
-                        }
-                        Text(updatedText)
-                            .font(.notch(size: 10))
-                            .foregroundStyle(.secondary)
-                    }
-
-                    if limits.status == .unavailable
-                        || (limits.status == .error && sections.isEmpty) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(limits.error ?? L("Unavailable"))
-                                .font(.notch(size: 11))
-                                .foregroundStyle(.secondary)
-                            Button(action: onSignIn) {
-                                Text(L("Sign in"))
+                VStack(spacing: 0) {
+                    // Top chrome — same as compact list (refresh top-right) + back
+                    HStack(spacing: 8) {
+                        Button(action: onBack) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "chevron.left")
                                     .font(.notch(size: 11, weight: .semibold))
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 5)
-                                    .background(Capsule().fill(Color.white.opacity(0.12)))
+                                Text(L("Back"))
+                                    .font(.notch(size: 11, weight: .medium))
                             }
-                            .buttonStyle(.plain)
-                            .foregroundStyle(.white.opacity(0.9))
+                            .foregroundStyle(.secondary)
                         }
-                        .padding(.top, 4)
-                    } else {
-                        ForEach(Array(sections.enumerated()), id: \.offset) { _, section in
-                            DetailWindowSection(
-                                label: section.label,
-                                window: section.window,
-                                now: now
-                            )
-                        }
-                    }
+                        .buttonStyle(.plain)
 
-                    // Footer actions (Orca-like)
-                    VStack(alignment: .leading, spacing: 0) {
-                        Divider().overlay(Color.white.opacity(0.08))
-                        detailRowButton(
-                            title: "\(limits.provider.displayName) \(L("Account"))",
-                            systemImage: nil
-                        ) {
-                            ProviderAuthService.openAccountPage(for: limits.provider)
-                        }
-                        detailRowButton(title: L("Sign in / re-auth"), systemImage: "person.badge.key") {
-                            onSignIn()
-                        }
+                        Spacer(minLength: 0)
+
+                        UsageRefreshButton(isRefreshing: isFetching, action: onRefresh)
                     }
-                    .padding(.top, 4)
+                    .padding(.trailing, 4)
+                    .padding(.top, 2)
+
+                    ScrollView(.vertical, showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            // Title row — same type scale as compact chips
+                            HStack(spacing: 6) {
+                                Text(limits.provider.displayName)
+                                    .font(.notch(size: 12, weight: .medium))
+                                    .foregroundStyle(.white.opacity(0.9))
+                                    .lineLimit(1)
+                                Spacer(minLength: 0)
+                                Text(updatedText)
+                                    .font(.notch(size: 10))
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+
+                            if limits.status == .unavailable
+                                || (limits.status == .error && sections.isEmpty) {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text(limits.error ?? L("Unavailable"))
+                                        .font(.notch(size: 11))
+                                        .foregroundStyle(.secondary)
+                                    Button(action: onSignIn) {
+                                        HStack(spacing: 4) {
+                                            ProviderIconView(provider: limits.provider, size: 11)
+                                            Text(L("Sign in"))
+                                                .font(.notch(size: 10, weight: .semibold))
+                                        }
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Capsule().fill(Color.white.opacity(0.12)))
+                                    }
+                                    .buttonStyle(.plain)
+                                    .foregroundStyle(.white.opacity(0.9))
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4)
+                            } else {
+                                // Same card stack as compact provider list
+                                ForEach(Array(sections.enumerated()), id: \.offset) { _, section in
+                                    DetailUsageRow(
+                                        label: section.label,
+                                        window: section.window,
+                                        now: now
+                                    )
+                                }
+                            }
+
+                            // Footer actions — list rows (project chrome), not pills
+                            VStack(alignment: .leading, spacing: 0) {
+                                Divider().overlay(Color.white.opacity(0.08))
+                                    .padding(.top, 4)
+                                detailRowButton(
+                                    title: "\(limits.provider.displayName) \(L("Account"))",
+                                    systemImage: nil
+                                ) {
+                                    ProviderAuthService.openAccountPage(for: limits.provider)
+                                }
+                                detailRowButton(
+                                    title: L("Sign in / re-auth"),
+                                    systemImage: "person.badge.key"
+                                ) {
+                                    onSignIn()
+                                }
+                            }
+                        }
+                        .padding(.trailing, sidePad)
+                        .padding(.bottom, 8)
+                    }
                 }
-                .padding(.horizontal, 14)
-                .padding(.bottom, 10)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
+            .frame(width: geo.size.width, height: geo.size.height, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var updatedText: String {
@@ -450,69 +474,116 @@ struct ProviderDetailPanel: View {
 
     private func detailRowButton(title: String, systemImage: String?, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack {
+            HStack(spacing: 8) {
                 if let systemImage {
                     Image(systemName: systemImage)
                         .font(.notch(size: 11))
                         .foregroundStyle(.secondary)
+                        .frame(width: 14)
                 }
                 Text(title)
-                    .font(.notch(size: 12, weight: .medium))
+                    .font(.notch(size: 11, weight: .medium))
                     .foregroundStyle(.white.opacity(0.9))
-                Spacer()
+                    .lineLimit(1)
+                Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
                     .font(.notch(size: 10, weight: .semibold))
-                    .foregroundStyle(.secondary.opacity(0.7))
+                    .foregroundStyle(.secondary.opacity(0.55))
             }
+            .padding(.horizontal, 10)
             .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.white.opacity(0.05))
+            )
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .padding(.top, 2)
     }
 }
 
-struct DetailWindowSection: View {
+/// Large square provider mark — same visual language as `UsageMascotView`.
+struct ProviderDetailLogoSquare: View {
+    let provider: UsageProviderID
+    var side: CGFloat = 88
+
+    private var corner: CGFloat { max(6, side * 0.18) }
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: corner, style: .continuous)
+                .fill(Color.white.opacity(0.08))
+            ProviderIconView(provider: provider, size: side * 0.62)
+        }
+        .frame(width: side, height: side)
+        .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
+        .accessibilityHidden(true)
+    }
+}
+
+/// Compact usage row — same card chrome as compact provider list rows.
+struct DetailUsageRow: View {
     let label: String
     let window: RateLimitWindow
     var now: Date
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        HStack(spacing: 8) {
             Text(label)
-                .font(.notch(size: 12, weight: .semibold))
-                .foregroundStyle(.white)
+                .font(.notch(size: 11, weight: .medium))
+                .foregroundStyle(.white.opacity(0.9))
+                .frame(width: 54, alignment: .leading)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
 
-            // Full-width bar (6px like Orca panel)
+            // Mini-bar (same height/color language as CompactMiniBar)
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color.white.opacity(0.12))
                     Capsule()
                         .fill(OrcaUsageFormatting.barColor(usedPercent: window.usedPercent))
-                        .frame(width: max(3, geo.size.width * CGFloat(min(100, max(0, window.usedPercent)) / 100)))
+                        .frame(width: max(2, geo.size.width * CGFloat(min(100, max(0, window.usedPercent)) / 100)))
                 }
             }
             .frame(height: 6)
 
-            HStack {
-                Text("\(Int(min(100, max(0, window.usedPercent)).rounded()))% used")
-                    .font(.notch(size: 11).monospacedDigit())
-                    .foregroundStyle(.secondary)
-                Spacer()
-                if let reset = resetLabel {
-                    Text(reset)
-                        .font(.notch(size: 11))
-                        .foregroundStyle(.secondary)
-                }
+            Text(percentText)
+                .font(.notch(size: 11, weight: .medium).monospacedDigit())
+                .foregroundStyle(.white.opacity(0.9))
+                .lineLimit(1)
+
+            if let reset = resetText {
+                Text("·")
+                    .font(.notch(size: 11))
+                    .foregroundStyle(.secondary.opacity(0.7))
+                Text(reset)
+                    .font(.notch(size: 11, weight: .medium).monospacedDigit())
+                    .foregroundStyle(.white.opacity(0.9))
+                    .lineLimit(1)
+                    .layoutPriority(1)
             }
         }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(Color.white.opacity(0.05))
+        )
+        .contentShape(Rectangle())
     }
 
-    private var resetLabel: String? {
+    private var percentText: String {
+        "\(Int(min(100, max(0, window.usedPercent)).rounded()))%"
+    }
+
+    private var resetText: String? {
         guard let resetsAt = window.resetsAt else { return nil }
         let ms = Double(resetsAt) - now.timeIntervalSince1970 * 1000
         let duration = OrcaUsageFormatting.formatResetDuration(ms: ms)
-        if duration == "now" { return L("Resets now") }
-        return "\(L("Resets in")) \(duration)"
+        return duration
     }
 }
 

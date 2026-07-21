@@ -25,6 +25,8 @@ struct ClipboardHistoryView: View {
     @State private var copyPhase: ClipboardCopyPhase?
     @State private var closeWorkItem: DispatchWorkItem?
     @State private var promoteWorkItem: DispatchWorkItem?
+    /// Debounce QL content swap while arrow-key browsing (avoids size thrash).
+    @State private var quickLookUpdateWork: DispatchWorkItem?
 
     // MARK: Pre-iter6 card geometry (adaptive height, ~140 width)
     private let cardSpacing: CGFloat = 8
@@ -73,7 +75,9 @@ struct ClipboardHistoryView: View {
         }
         .onChange(of: manager.selectedIndex) { _, _ in
             if isQuickLookVisible {
-                openQuickLookForSelection()
+                // Debounce keyboard browse so QL reloads once per selection settle
+                // and keeps the locked square (instant reload thrash broke scaling).
+                scheduleQuickLookUpdateForSelection()
             }
         }
         .onChange(of: quickLookService.isQuickLookOpen) { wasOpen, isOpen in
@@ -241,29 +245,48 @@ struct ClipboardHistoryView: View {
             closeQuickLook()
             return
         }
-        openQuickLookForSelection()
+        openQuickLookForSelection(immediate: true)
     }
 
-    private func openQuickLookForSelection() {
+    private func scheduleQuickLookUpdateForSelection() {
+        quickLookUpdateWork?.cancel()
+        let work = DispatchWorkItem {
+            openQuickLookForSelection(immediate: false)
+        }
+        quickLookUpdateWork = work
+        // Short delay coalesces rapid arrow key events into one reload.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05, execute: work)
+    }
+
+    private func openQuickLookForSelection(immediate: Bool = true) {
         guard let item = manager.selectedItem else {
             closeQuickLook()
             return
         }
         let prepared = ClipboardQuickLookSupport.previewURLs(for: item)
         guard !prepared.urls.isEmpty else {
-            closeQuickLook()
+            // Keep panel open on empty item only if we have no replacement —
+            // browsing past a non-previewable card shouldn't kill a good session
+            // when user keeps moving; close only on explicit empty selection.
+            if immediate {
+                closeQuickLook()
+            }
             return
         }
         let previousTemps = tempPreviewURLs
-        tempPreviewURLs = prepared.temporary
+        // Keep previous temps until after show() so reload can still read them
+        // if the new item reuses a path; then drop the rest.
         holdNotchOpen()
         quickLookService.show(urls: prepared.urls, selectFirst: true)
+        tempPreviewURLs = prepared.temporary
         ClipboardQuickLookSupport.cleanupTemporary(
             previousTemps.filter { !prepared.temporary.contains($0) }
         )
     }
 
     private func closeQuickLook() {
+        quickLookUpdateWork?.cancel()
+        quickLookUpdateWork = nil
         quickLookService.hide()
         cleanupTempPreviews()
         releaseNotchHold()
@@ -309,7 +332,7 @@ struct ClipboardHistoryView: View {
         monitor.onDelete = {
             manager.deleteSelected()
             if isQuickLookVisible {
-                openQuickLookForSelection()
+                openQuickLookForSelection(immediate: true)
             }
         }
         monitor.onEscape = {

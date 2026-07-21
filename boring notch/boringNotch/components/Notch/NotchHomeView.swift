@@ -141,18 +141,21 @@ struct MusicControlsView: View {
     private func songInfo(width: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             MarqueeText(
-                $musicManager.songTitle, font: .headline, nsFont: .headline, textColor: .white,
-                frameWidth: width)
+                $musicManager.songTitle,
+                nsFont: .headline,
+                weight: .semibold,
+                textColor: .white,
+                frameWidth: width
+            )
             MarqueeText(
                 $musicManager.artistName,
-                font: .headline,
                 nsFont: .headline,
+                weight: .medium,
                 textColor: Defaults[.playerColorTinting]
                     ? Color(nsColor: musicManager.avgColor)
                         .ensureMinimumBrightness(factor: 0.6) : .gray,
                 frameWidth: width
             )
-            .fontWeight(.medium)
             if Defaults[.enableLyrics] {
                 TimelineView(.animation(minimumInterval: 0.25)) { timeline in
                     let currentElapsed: Double = {
@@ -173,14 +176,19 @@ struct MusicControlsView: View {
                         let v = scalar.value
                         return v >= 0x0600 && v <= 0x06FF
                     }
+                    let lyricFont: Font? = isPersian
+                        ? .custom(
+                            "Vazirmatn-Regular",
+                            size: NSFont.preferredFont(forTextStyle: .subheadline).pointSize
+                        )
+                        : nil
                     MarqueeText(
                         .constant(line),
-                        font: .subheadline,
+                        font: lyricFont,
                         nsFont: .subheadline,
                         textColor: musicManager.isFetchingLyrics ? .gray.opacity(0.7) : .gray,
                         frameWidth: width
                     )
-                    .font(isPersian ? .custom("Vazirmatn-Regular", size: NSFont.preferredFont(forTextStyle: .subheadline).pointSize) : .notch(.subheadline))
                     .lineLimit(1)
                     .opacity(musicManager.isPlaying ? 1 : 0)
                     .transition(.opacity.combined(with: .move(edge: .top)))

@@ -433,10 +433,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self.closeNotchTask = nil
 
                 await MainActor.run {
+                    // Guard: clipboard space may be disabled in Settings.
+                    guard Defaults[.clipboardEnabled] else { return }
+
                     switch viewModel.notchState {
                     case .closed:
-                        self.coordinator.currentView = .clipboard
-                        viewModel.open()
+                        // Must use open(to:) — plain open() would reset tab via applyDefaultSpaceOnOpen().
+                        viewModel.open(to: .clipboard)
                     case .open:
                         if self.coordinator.currentView == .clipboard {
                             viewModel.close()

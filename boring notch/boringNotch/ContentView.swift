@@ -369,7 +369,14 @@ struct ContentView: View {
                                   HStack(alignment: .center) {
                                       Image(systemName: "music.note")
                                       GeometryReader { geo in
-                                          MarqueeText(.constant(musicManager.songTitle + " - " + musicManager.artistName),  textColor: Defaults[.playerColorTinting] ? Color(nsColor: musicManager.avgColor).ensureMinimumBrightness(factor: 0.6) : .gray, minDuration: 1, frameWidth: geo.size.width)
+                                          MarqueeText(
+                                              .constant(musicManager.songTitle + " - " + musicManager.artistName),
+                                              nsFont: .body,
+                                              weight: .medium,
+                                              textColor: Defaults[.playerColorTinting] ? Color(nsColor: musicManager.avgColor).ensureMinimumBrightness(factor: 0.6) : .gray,
+                                              minDuration: 1,
+                                              frameWidth: geo.size.width
+                                          )
                                       }
                                   }
                                   .foregroundStyle(.gray)
@@ -453,6 +460,8 @@ struct ContentView: View {
                         {
                             MarqueeText(
                                 .constant(musicManager.songTitle),
+                                nsFont: .subheadline,
+                                weight: .medium,
                                 textColor: Defaults[.coloredSpectrogram]
                                     ? Color(nsColor: musicManager.avgColor) : Color.gray,
                                 minDuration: 0.4,
@@ -466,6 +475,7 @@ struct ContentView: View {
                             Spacer(minLength: vm.closedNotchSize.width)
                             // Song Artist
                             Text(musicManager.artistName)
+                                .font(.notch(.subheadline, weight: .medium))
                                 .lineLimit(1)
                                 .truncationMode(.tail)
                                 .foregroundStyle(

@@ -96,21 +96,31 @@ enum NotchFont {
         .system(size: size, weight: weight, design: .rounded)
     }
 
+    /// Line height for marquee / layout measurement under the current notch font.
+    static func lineHeight(for textStyle: Font.TextStyle, weight: Font.Weight = .regular) -> CGFloat {
+        let size = pointSize(for: textStyle)
+        if let ns = resolvedNSFont(size: size, weight: weight) {
+            return ceil(ns.ascender - ns.descender + ns.leading)
+        }
+        return size * 1.2
+    }
+
     // MARK: resolve
 
     private static func resolve(size: CGFloat, weight: Font.Weight) -> Font {
-        let family = Defaults[.notchFontFamily]
-        guard !family.isEmpty else {
-            return .system(size: size, weight: weight)
-        }
-        if let ns = nsFont(family: family, size: size, weight: weight) {
-            return Font(ns)
-        }
-        // Last resort: PostScript / face name
-        if let ns = NSFont(name: family, size: size) {
+        if let ns = resolvedNSFont(size: size, weight: weight) {
             return Font(ns)
         }
         return .system(size: size, weight: weight)
+    }
+
+    private static func resolvedNSFont(size: CGFloat, weight: Font.Weight) -> NSFont? {
+        let family = Defaults[.notchFontFamily]
+        guard !family.isEmpty else {
+            return NSFont.systemFont(ofSize: size, weight: nsFontWeight(weight))
+        }
+        return nsFont(family: family, size: size, weight: weight)
+            ?? NSFont(name: family, size: size)
     }
 
     private static func nsFont(family: String, size: CGFloat, weight: Font.Weight) -> NSFont? {
@@ -131,6 +141,21 @@ enum NotchFont {
             return font
         }
         return nil
+    }
+
+    private static func nsFontWeight(_ weight: Font.Weight) -> NSFont.Weight {
+        switch weight {
+        case .ultraLight: return .ultraLight
+        case .thin: return .thin
+        case .light: return .light
+        case .regular: return .regular
+        case .medium: return .medium
+        case .semibold: return .semibold
+        case .bold: return .bold
+        case .heavy: return .heavy
+        case .black: return .black
+        default: return .regular
+        }
     }
 
     /// NSFontManager weight scale ≈ 0…15 (5 = regular, 9 = bold).
